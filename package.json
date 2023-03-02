@@ -1,7 +1,7 @@
 {
-  "name": "tscord",
+  "name": "discord-chatbot-chatgpt",
   "version": "1.0.0",
-  "description": "な、なによ！えっちなのはダメなんだから！！",
+  "description": "chatGPT chatbot for discord",
   "license": "MIT",
   "main": "build/main.js",
   "scripts": {
