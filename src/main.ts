@@ -12,6 +12,9 @@ import { NoBotTokenError } from "@errors"
 import { Database, ErrorHandler, ImagesUpload, Logger, PluginsManager, WebSocket } from "@services"
 import { initDataTable, resolveDependency } from "@utils/functions"
 import { clientConfig } from "./client"
+import { OpenAIApi } from 'openai'
+import { openApiConfig } from './config/openai'
+import { ClientAi } from './utils/classes/ClientAi'
 
 async function run() {
 
@@ -36,9 +39,11 @@ async function run() {
     const db = await resolveDependency(Database)
     await db.initialize()
 
+    const openAiClient = new OpenAIApi(openApiConfig)
+
     // init the client
     DIService.engine = tsyringeDependencyRegistryEngine.setInjector(container)
-    const client = new Client(clientConfig)
+    const client: ClientAi = new ClientAi(clientConfig, openAiClient)
 
     // Load all new events
     discordLogs(client, { debug: false })

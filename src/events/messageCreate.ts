@@ -5,6 +5,7 @@ import { Maintenance } from "@guards"
 import { executeEvalFromMessage, isDev } from "@utils/functions"
 
 import { generalConfig } from "@config"
+import { ClientAi } from "@utils/classes"
 
 @Discord()
 export default class MessageCreateEvent {
@@ -15,7 +16,7 @@ export default class MessageCreateEvent {
     )
     async messageCreateHandler(
         [message]: ArgsOf<"messageCreate">, 
-        client: Client
+        client: ClientAi
      ) {
 
         // eval command
