@@ -52,3 +52,7 @@ export const isValidUrl = (url: string) => {
         return false
     }
 }
+
+export const trimReply = (string: string): string => {
+    return string.replace(/<@(.+)>/, '');
+}
