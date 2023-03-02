@@ -23,7 +23,7 @@ export default class MessageCreateEvent {
         if (client.user && message.mentions?.has(client.user)) {
             const question = trimReply(message.content)
             client.chatContexts.push({ 'role': 'user', 'content': message.content })
-            console.log(`[ChatGPT] Query from ${message?.author} :: ${message?.content}`)
+            console.log(`[ChatGPT] Query from ${message?.author?.username} :: ${question}`)
             message.channel.sendTyping()
             client.openAiApi.createChatCompletion({
                 'model': 'gpt-3.5-turbo',
