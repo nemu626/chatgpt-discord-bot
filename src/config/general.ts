@@ -28,14 +28,6 @@ export const generalConfig: GeneralConfigType = {
 
 	// define the bot activities (phrases under its name). Types can be: PLAYING, LISTENING, WATCHING, STREAMING
     activities: [
-		{
-			text: 'discord.js v14',
-			type: 'PLAYING'
-		},
-		{
-			text: 'some knowledge',
-			type: 'STREAMING'
-		}
 	]
 
 }
