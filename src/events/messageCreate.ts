@@ -1,10 +1,10 @@
-import { ArgsOf, Client } from "discordx"
+import { ArgsOf } from "discordx"
 
 import { Discord, Guard, On } from "@decorators"
-import { Maintenance, NotBot } from "@guards"
+import { Maintenance } from "@guards"
 import { executeEvalFromMessage, isDev } from "@utils/functions"
 
-import { generalConfig } from "@config"
+import { CHAT_MODEL_STRING, generalConfig, shiftMessages } from "@config"
 import { ClientAi } from "@utils/classes"
 import { trimReply } from "@utils/functions"
 
@@ -22,19 +22,21 @@ export default class MessageCreateEvent {
 
         if (client.user && message.mentions?.has(client.user)) {
             const question = trimReply(message.content)
-            client.chatContexts.push({ 'role': 'user', 'content': message.content })
+            client.chatContexts.push({ 'role': 'user', 'content': question })
             console.log(`[ChatGPT] Query from ${message?.author?.username} :: ${question}`)
             message.channel.sendTyping()
             client.openAiApi.createChatCompletion({
-                'model': 'gpt-3.5-turbo',
+                'model': CHAT_MODEL_STRING,
                 messages: client.chatContexts
             })
                 .then(response => {
                     if (response.status === 200 && response.data) {
                         const answer: string = response.data?.choices?.[0].message?.content || ''
                         console.log(`[ChatGPT] Answer of GPT :: ${answer}`)
-                        client.chatContexts.push({ 'role': 'assistant', 'content': answer})
+                        // console.log(`[ChatGPT] INFO :: token: ${response.data.usage?.prompt_tokens}, ${response.data.usage?.completion_tokens}`)
                         message.reply(answer);
+                        client.chatContexts.push({ 'role': 'assistant', 'content': answer})
+                        client.chatContexts = shiftMessages(client.chatContexts, response.data.usage?.total_tokens || 0)
                     }
                 })
                 .catch(error => {
