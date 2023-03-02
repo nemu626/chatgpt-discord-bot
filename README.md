@@ -23,6 +23,7 @@ BOT_OWNER_ID="YOUR_DISCORD_ID"
 
 # openai api
 OPENAI_APIKEY=xx-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+OPENAI_CHAT_SYSTEM="You are chatbot Assistance. Your name is Mari. You are Female. "
 ```
 
 3 run bot
