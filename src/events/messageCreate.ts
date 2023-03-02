@@ -20,6 +20,23 @@ export default class MessageCreateEvent {
      ) {
 
         // eval command
+        const moderation = await client.openAiApi.createModeration({
+            input: message.content,
+        })
+        if( moderation.status === 200 ) {
+            const isSexual = moderation?.data?.results?.some(result => 
+                result?.categories?.sexual
+            )
+            const scores: number[] = moderation?.data?.results.map(res => res.category_scores["sexual"])
+            const scoreMessage = scores.map(s => s.toFixed(2)).join();
+            if (isSexual) {
+                message.channel.send('えっちなのはダメ！死刑！！' + scoreMessage)
+            } 
+            else {
+                message.channel.send(scoreMessage);
+            }
+        }
+        
         if (
             message.content.startsWith(`\`\`\`${generalConfig.eval.name}`)
             && (
