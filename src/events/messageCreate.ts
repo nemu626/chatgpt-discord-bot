@@ -27,6 +27,7 @@ export default class MessageCreateEvent {
             message.channel.sendTyping()
             client.openAiApi.createChatCompletion({
                 'model': CHAT_MODEL_STRING,
+                temperature: 0.5,
                 messages: client.chatContexts
             })
                 .then(response => {
