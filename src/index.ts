@@ -1,5 +1,5 @@
 
-import { Client, GatewayIntentBits, ModalSubmitFields, StageChannel } from 'discord.js';
+import { Client, GatewayIntentBits, StageChannel } from 'discord.js';
 import { Configuration, OpenAIApi } from 'openai';
 
 const client = new Client({
@@ -10,15 +10,9 @@ const client = new Client({
     ]
 }
 );
-import arg from 'arg';
 
-const args = arg({
-    '--token': String,
-    '--apiKey': String,
-});
-
-const token = args['--token'];
-const apiKey = args['--apiKey'];
+const token: string = process.env.DISCORD_BOT_TOKEN || '';
+const apiKey: string = process.env.OPENAI_APIKEY || '';
 
 const configuration = new Configuration({
     apiKey: apiKey

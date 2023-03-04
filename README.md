@@ -1,7 +1,11 @@
 # chatgpt-discord-bot
 discord-bot for chatGPT.
-use command line args for input discord bot TOKEN and openAPI apiKey.
+to use this, set the discord token and openai api key to `.env` file.
 
 ```shell
-node bot.js --token XXXXXXXXXXXXXXXX --apiKey XXXXXXXXXXXXX
+cp .env.example .env
+# input token and apikey
+vi .env
+
+npm run start
 ```
