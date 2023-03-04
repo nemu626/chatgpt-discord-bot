@@ -1,3 +1,4 @@
+import 'dotenv/config';
 
 import { Client, GatewayIntentBits, StageChannel } from 'discord.js';
 import { Configuration, OpenAIApi } from 'openai';

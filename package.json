@@ -25,6 +25,7 @@
   "homepage": "https://github.com/nemu626/chatgpt-discord-bot#readme",
   "dependencies": {
     "discord.js": "^14.7.1",
+    "dotenv": "^16.0.3",
     "openai": "^3.1.0"
   },
   "devDependencies": {
