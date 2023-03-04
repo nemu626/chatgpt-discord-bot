@@ -5,14 +5,9 @@ import { Configuration, OpenAIApi } from 'openai';
 import { DefaultClientIntents } from './config/client';
 
 const client = new Client({ intents: DefaultClientIntents });
-
 const token: string = process.env.DISCORD_BOT_TOKEN || '';
 const apiKey: string = process.env.OPENAI_APIKEY || '';
-
-const configuration = new Configuration({
-    apiKey: apiKey
-});
-const openAIApi = new OpenAIApi(configuration);
+const openAIApi = new OpenAIApi(new Configuration({ apiKey: apiKey }));
 
 client.on('ready', () => {
     console.log(`Logged in as ${client.user?.tag}!`);
