@@ -1,6 +1,6 @@
 import 'dotenv/config';
 
-import { Client, StageChannel } from 'discord.js';
+import { ChannelType, Client, Guild, GuildBasedChannel, Message, StageChannel } from 'discord.js';
 import { Configuration, OpenAIApi } from 'openai';
 import { DefaultClientIntents } from './config/client';
 import { OPENAI_CHAT_MODEL, DEFAULT_TEMPERATURE } from './config/openai';
@@ -14,7 +14,17 @@ client.on('ready', () => {
     console.log(`Logged in as ${client.user?.tag}!`);
 });
 
-client.on('messageCreate', msg => {
+client.on('guildCreate', (guild: Guild) => {
+    const mainChannel: GuildBasedChannel | undefined = guild.channels.cache.find(ch =>
+        ch.type === ChannelType.GuildText &&
+        !!guild.members.me &&
+        ch.permissionsFor(guild.members.me).has('SendMessages'));
+    if (mainChannel?.isTextBased() && process.env.GREETING_MESSAGE) {
+        mainChannel.send(process.env.GREETING_MESSAGE);
+    }
+});
+
+client.on('messageCreate', (msg: Message) => {
     if (msg.author.bot ||
         !msg.channel ||
         msg.channel instanceof (StageChannel) ||
