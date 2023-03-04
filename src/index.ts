@@ -17,8 +17,8 @@ client.on('ready', () => {
 client.on('guildCreate', (guild: Guild) => {
 	const mainChannel: GuildBasedChannel | undefined = guild.channels.cache.find(ch =>
 		ch.type === ChannelType.GuildText &&
-        !!guild.members.me &&
-        ch.permissionsFor(guild.members.me).has('SendMessages'));
+		!!guild.members.me &&
+		ch.permissionsFor(guild.members.me).has('SendMessages'));
 	if (mainChannel?.isTextBased() && process.env.GREETING_MESSAGE) {
 		mainChannel.send(process.env.GREETING_MESSAGE);
 	}
@@ -26,10 +26,10 @@ client.on('guildCreate', (guild: Guild) => {
 
 client.on('messageCreate', (msg: Message) => {
 	if (msg.author.bot ||
-        !msg.channel ||
-        msg.channel instanceof (StageChannel) ||
-        !client.user ||
-        !msg.mentions.has(client.user)) return;
+		!msg.channel ||
+		msg.channel instanceof (StageChannel) ||
+		!client.user ||
+		!msg.mentions.has(client.user)) return;
 
 	const question = msg.cleanContent;
 	console.log(`[Question] ${msg.author?.username} :: ${question}`);
