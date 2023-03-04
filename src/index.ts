@@ -3,6 +3,7 @@ import 'dotenv/config';
 import { Client, StageChannel } from 'discord.js';
 import { Configuration, OpenAIApi } from 'openai';
 import { DefaultClientIntents } from './config/client';
+import { OPENAI_CHAT_MODEL, DEFAULT_TEMPERATURE } from './config/openai';
 
 const client = new Client({ intents: DefaultClientIntents });
 const token: string = process.env.DISCORD_BOT_TOKEN || '';
@@ -14,32 +15,29 @@ client.on('ready', () => {
 });
 
 client.on('messageCreate', msg => {
-    if (msg.author.bot) return;
-    if (!msg.channel || msg.channel instanceof (StageChannel)) return;
-    if (msg.content.startsWith('!')) {
-        const command = msg.content.substring(1);
-        if (command === 'help') {
-            msg.channel.send('**Available commands:**\n' +
-                '!help - shows this message\n' +
-                'any text - send any text to receive GPT-3 generated response');
-        }
-    } else if (client.user && msg.mentions.has(client.user)) {
-        const question = msg.content.replace(/<@(.+)>/, '');
-        console.log('* QUESTION:', question);
-        msg.channel.sendTyping();
-        openAIApi.createCompletion({
-            prompt: question,
-            model: 'text-davinci-003',
-            max_tokens: 256,
-        }).then(({ data, status }) => {
-            if (data && status === 200) {
-                console.log(data);
-                const answer = data.choices[0].text || '';
-                console.log('* ANSWER   : ', answer);
-                msg.reply(answer);
-            }
-        });
-    }
+    if (msg.author.bot ||
+        !msg.channel ||
+        msg.channel instanceof (StageChannel) ||
+        !client.user ||
+        !msg.mentions.has(client.user)) return;
+
+    const question = msg.cleanContent;
+    console.log(`[Question] ${msg.author?.username} :: ${question}`);
+
+    msg.channel.sendTyping();
+
+    openAIApi.createChatCompletion({
+        model: OPENAI_CHAT_MODEL,
+        temperature: DEFAULT_TEMPERATURE,
+        messages: [{ 'role': 'user', 'content': question }]
+    }).then(({ status, data }) => {
+        if (status !== 200 || !data) return;
+
+        const answer: string = data.choices?.[0].message?.content || '';
+        console.log(`[Answer] chatGPT :: ${answer}`);
+
+    });
+
 });
 
 client.login(token);
