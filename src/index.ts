@@ -1,16 +1,10 @@
 import 'dotenv/config';
 
-import { Client, GatewayIntentBits, StageChannel } from 'discord.js';
+import { Client, StageChannel } from 'discord.js';
 import { Configuration, OpenAIApi } from 'openai';
+import { DefaultClientIntents } from './config/client';
 
-const client = new Client({
-    intents: [
-        GatewayIntentBits.MessageContent,
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-    ]
-}
-);
+const client = new Client({ intents: DefaultClientIntents });
 
 const token: string = process.env.DISCORD_BOT_TOKEN || '';
 const apiKey: string = process.env.OPENAI_APIKEY || '';
