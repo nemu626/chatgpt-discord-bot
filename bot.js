@@ -1,5 +1,6 @@
-const { Client, GatewayIntentBits } = require('discord.js');
-const { Configuration, OpenAIApi } = require("openai");
+
+import { Client, GatewayIntentBits } from 'discord.js';
+import { Configuration, OpenAIApi } from 'openai';
 
 const client = new Client({
     intents: [
@@ -9,7 +10,7 @@ const client = new Client({
     ]
 }
 );
-const arg = require('arg');
+import { arg } from 'arg';
 
 const args = arg({
     '--token': String,
@@ -30,12 +31,12 @@ client.on('ready', () => {
 
 client.on('messageCreate', msg => {
     if (msg.author.bot) return;
-    if (msg.content.startsWith("!")) {
+    if (msg.content.startsWith('!')) {
         const command = msg.content.substring(1);
-        if (command === "help") {
-            msg.channel.send("**Available commands:**\n" +
-                "!help - shows this message\n" +
-                "any text - send any text to receive GPT-3 generated response");
+        if (command === 'help') {
+            msg.channel.send('**Available commands:**\n' +
+                '!help - shows this message\n' +
+                'any text - send any text to receive GPT-3 generated response');
         }
     } else if (msg.mentions.has(client.user)) {
         const question = msg.content.replace(/<@(.+)>/, '');
@@ -43,14 +44,14 @@ client.on('messageCreate', msg => {
         msg.channel.sendTyping();
         openAIApi.createCompletion({
             prompt: question,
-            model: "text-davinci-003",
+            model: 'text-davinci-003',
             max_tokens: 256,
         }).then(({ data, status }) => {
             if (data && status === 200) {
-                console.log(data)
+                console.log(data);
                 const answer = data.choices[0].text || '';
                 console.log('* ANSWER   : ', answer);
-                msg.reply(answer)
+                msg.reply(answer);
             }
         });
     }
