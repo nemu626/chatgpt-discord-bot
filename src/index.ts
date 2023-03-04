@@ -44,8 +44,10 @@ client.on('messageCreate', (msg: Message) => {
 		if (status !== 200 || !data) return;
 
 		const answer: string = data.choices?.[0].message?.content || '';
+		msg.reply(answer);
 		console.log(`[Answer] chatGPT :: ${answer}`);
-
+	}).catch((error: Error) => {
+		console.log(`[Error] :: ${error.message}`);
 	});
 
 });
