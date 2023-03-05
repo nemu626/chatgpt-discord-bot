@@ -27,11 +27,14 @@ const bots: ChatBot[] = botConfigs.map(config => ({ ...config, logs: [], systemP
 
 const currentBotIndex = 0;
 
-client.on('ready', () => {
+client.on('ready', (client) => {
 	console.log(`Logged in as ${client.user?.tag}!`);
 });
 
 client.on('guildCreate', (guild: Guild) => {
+	if (bots[currentBotIndex]) {
+		guild.members.me?.setNickname(bots[currentBotIndex].name);
+	}
 	const mainChannel: GuildBasedChannel | undefined = guild.channels.cache.find(ch =>
 		ch.type === ChannelType.GuildText &&
 		!!guild.members.me &&
