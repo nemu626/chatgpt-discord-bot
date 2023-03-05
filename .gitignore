@@ -3,4 +3,4 @@ lib
 
 .env
 
-bots/*.json
+src/bots/*.json
