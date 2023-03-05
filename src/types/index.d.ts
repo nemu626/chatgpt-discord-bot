@@ -10,10 +10,12 @@ export type ChatBotConfig = {
     systemMessage?: string;
 }
 
-export type ChatMessageWithToken = ChatCompletionRequestMessage & {
+export type ChatMessageWithToken = {
+    content: ChatCompletionRequestMessage;
     token: number;
 }
 
 export type ChatBot = ChatBotConfig & {
-    logs: ChatMessageWithToken[]
+    logs: ChatMessageWithToken[];
+    systemPrompt?: ChatMessageWithToken;
 }
