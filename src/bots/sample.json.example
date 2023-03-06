@@ -1,0 +1,7 @@
+{
+    "name": "chatGPT",
+    "temperature": 0.5,
+    "systemMessage": "You are helpful chatbot.",
+    "greetingMessage": "Hello, I am chatGPT. Mention me and I will answer you.",
+    "maxPromptToken": 2048
+}
