@@ -14,7 +14,7 @@ const apiKey: string = process.env.OPENAI_APIKEY || '';
 const openAIApi = new OpenAIApi(new Configuration({ apiKey: apiKey }));
 
 
-const botConfigs: ChatBotConfig[] = readBotConfigs('./src/bots');
+const botConfigs: ChatBotConfig[] = readBotConfigs('./bots');
 console.log('[System] Read and initialize bots... :: ', ...botConfigs.map(config => config.name));
 const bots: ChatBot[] = botConfigs.map(config => ({ ...config, logs: [], systemPrompt: config.systemMessage ? { content: { content: config.systemMessage, role: 'system' }, token: 400 } : undefined }));
 // bots.forEach(async bot => {

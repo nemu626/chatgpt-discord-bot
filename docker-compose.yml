@@ -1,0 +1,13 @@
+version: '3'
+
+services:
+  app:
+    container_name: discord_chatgpt_bot
+    build: .
+    ports:
+      - 4000:4000
+    volumes:
+      - ./bots:/app/bots
+    env_file:
+      - .env
+    restart: always
