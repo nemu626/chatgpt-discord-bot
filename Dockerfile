@@ -11,7 +11,7 @@ COPY src  ./src
 RUN npm run build
 
 # Runner
-FROM node:19-alpine
+FROM node:19-slim
 ARG NODE_ENV=production
 ENV NODE_ENV $NODE_ENV
 
