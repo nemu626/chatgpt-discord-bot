@@ -42,12 +42,16 @@ client.on('interactionCreate', async (interaction) => {
 		currentBotIndex = botIndex;
 		interaction.guild?.members.me?.setNickname(bots[currentBotIndex].name);
 		interaction.reply(`ChatBot is changed to  ${bots[currentBotIndex].name}.\n ${bots[currentBotIndex].greetingMessage}`);
+		if (bots[currentBotIndex].profileImage)
+			client.user?.setAvatar(bots[currentBotIndex].profileImage || '');
 	}
 });
 
 client.on('guildCreate', (guild: Guild) => {
 	if (bots[currentBotIndex]) {
 		guild.members.me?.setNickname(bots[currentBotIndex].name);
+		if (bots[currentBotIndex].profileImage)
+			client.user?.setAvatar(bots[currentBotIndex].profileImage || '');
 	}
 	const mainChannel: GuildBasedChannel | undefined = guild.channels.cache.find(ch =>
 		ch.type === ChannelType.GuildText &&
