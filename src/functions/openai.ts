@@ -26,12 +26,13 @@ export const createLogPrompt = (messages: ChatMessageWithToken[], tokenLimit: nu
 
 	const limit = tokenLimit - (systemMessage?.token ?? 0);
 	let sum = 0;
-	const result: ChatCompletionRequestMessage[] = systemMessage ? [systemMessage.content] : [];
-	for (let i = 0; i < messages.length; i++) {
+	const result: ChatCompletionRequestMessage[] = [];
+	for (let i = messages.length - 1; i > 0; i--) {
 		if (sum + messages[i].token > limit)
 			break;
 		result.push(messages[i].content);
 		sum += messages[i].token;
 	}
-	return result;
+	if (systemMessage) result.push(systemMessage.content);
+	return result.reverse();
 };
