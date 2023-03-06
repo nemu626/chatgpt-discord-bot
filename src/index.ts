@@ -7,6 +7,9 @@ import { DefaultClientIntents } from './config/client';
 import { chatCompletion } from './functions/openai';
 import { DefaultChatbot } from './config/chatbot';
 import { getChangeChatbotCommand } from './functions/commands';
+import { get_encoding } from '@dqbd/tiktoken';
+
+const tokenizer = get_encoding('cl100k_base');
 
 const client = new Client({ intents: DefaultClientIntents });
 const token: string = process.env.DISCORD_BOT_TOKEN || '';
@@ -16,19 +19,18 @@ const openAIApi = new OpenAIApi(new Configuration({ apiKey: apiKey }));
 
 const botConfigs: ChatBotConfig[] = readBotConfigs('./bots');
 console.log('[System] Read and initialize bots... :: ', ...botConfigs.map(config => config.name));
-const bots: ChatBot[] = botConfigs.map(config => ({ ...config, logs: [], systemPrompt: config.systemMessage ? { content: { content: config.systemMessage, role: 'system' }, token: 400 } : undefined }));
-// bots.forEach(async bot => {
-// 	if (bot.systemMessage) {
-// 		// const token = await getPromptTokenLength(openAIApi, bot.systemMessage);
-// 		// TODO: remove fake token number;
-// 		const token = 400;
-// 		bot.systemPrompt = { content: { role: 'system', content: bot.systemMessage }, token: token };
-// 	}
-// });
+const bots: ChatBot[] = botConfigs.map(config => (
+	{
+		...config,
+		logs: [],
+		systemPrompt: config.systemMessage ? {
+			content: { content: config.systemMessage, role: 'system' },
+			token: tokenizer.encode(config.systemMessage).length
+		} : undefined
+	}));
 
 let currentBotIndex = 0;
 const slashCommands = [getChangeChatbotCommand(bots.map(bot => bot.name))];
-
 
 client.on('ready', (client) => {
 	console.log(`Logged in as ${client.user?.tag}!`);
