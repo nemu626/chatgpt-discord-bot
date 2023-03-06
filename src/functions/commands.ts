@@ -10,7 +10,7 @@ const getSubCommand = (name: string): ApplicationCommandSubCommandData => {
 
 export const getChangeChatbotCommand = (names: string[]): ChatInputApplicationCommandData => ({
 	description: 'Change character of chatbot',
-	name: 'change',
+	name: 'changebot',
 	options: names.map(name => getSubCommand(name))
 });
 
