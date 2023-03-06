@@ -1,0 +1,8 @@
+{
+    "name": "chatgpt",
+    "temperature": 0.5,
+    "systemMessage": "You are helpful chatbot.",
+    "greetingMessage": "Hello, I am chatGPT. Mention me and I will answer you.",
+    "maxPromptToken": 2048,
+    "profileImage": "https://i.namu.wiki/s/3db34effe2d62a8ab583b3e8775406e8f3f975751d081ffca9da03b2559d55a0866d6ea411a4622e21abe8aabee88595d5c5e29da582310a7ba2d43bde940ca496b51318acb0c8e8dcd12a093cb2483946d961d9183f7412e6990931be67d1e3"
+}
