@@ -6,6 +6,7 @@ import { Configuration, OpenAIApi } from 'openai';
 import { DefaultClientIntents } from './config/client';
 import { chatCompletion } from './functions/openai';
 import { DefaultChatbot } from './config/chatbot';
+import { getChangeChatbotCommand } from './functions/commands';
 
 const client = new Client({ intents: DefaultClientIntents });
 const token: string = process.env.DISCORD_BOT_TOKEN || '';
@@ -25,10 +26,23 @@ const bots: ChatBot[] = botConfigs.map(config => ({ ...config, logs: [], systemP
 // 	}
 // });
 
-const currentBotIndex = 0;
+let currentBotIndex = 0;
+const slashCommands = [getChangeChatbotCommand(bots.map(bot => bot.name))];
+
 
 client.on('ready', (client) => {
 	console.log(`Logged in as ${client.user?.tag}!`);
+	client.application.commands.set(slashCommands);
+});
+client.on('interactionCreate', async (interaction) => {
+	if (!interaction.isChatInputCommand()) return;
+	const slashCommand = slashCommands.find(command => command.name === interaction.command?.name);
+	if (slashCommand) {
+		const botIndex = bots.findIndex(bot => bot.name === interaction.options.getSubcommand());
+		currentBotIndex = botIndex;
+		interaction.guild?.members.me?.setNickname(bots[currentBotIndex].name);
+		interaction.reply(`ChatBot is changed to  ${bots[currentBotIndex].name}.\n ${bots[currentBotIndex].greetingMessage}`);
+	}
 });
 
 client.on('guildCreate', (guild: Guild) => {
