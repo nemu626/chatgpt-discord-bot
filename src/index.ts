@@ -1,13 +1,14 @@
 import 'dotenv/config';
 import { readBotConfigs } from './functions/chatbot';
 import { ChatBot, ChatBotConfig } from './types/index.d';
-import { ChannelType, Client, Guild, GuildBasedChannel, Message, StageChannel } from 'discord.js';
+import { ChannelType, Client, Collection, Guild, GuildBasedChannel, Message, StageChannel } from 'discord.js';
 import { Configuration, OpenAIApi } from 'openai';
 import { DefaultClientIntents } from './config/client';
-import { chatCompletion } from './functions/openai';
+import { chatCompletion, summarizeDiscordLogs } from './functions/openai';
 import { DefaultChatbot, ERROR_MESSAGE_500 } from './config/chatbot';
-import { getChangeChatbotCommand } from './functions/commands';
+import { getChangeChatbotCommand, SummarizeCommand } from './functions/commands';
 import { get_encoding } from '@dqbd/tiktoken';
+import { CommandNames, DEFAULT_SUMMARIZE_HOUR } from './config/commands';
 
 const tokenizer = get_encoding('cl100k_base');
 
@@ -30,7 +31,7 @@ const bots: ChatBot[] = botConfigs.map(config => (
 	}));
 
 let currentBotIndex = 0;
-const slashCommands = [getChangeChatbotCommand(bots.map(bot => bot.name))];
+const slashCommands = [getChangeChatbotCommand(bots.map(bot => bot.name)), SummarizeCommand];
 
 client.on('ready', (client) => {
 	console.log(`Logged in as ${client.user?.tag}!`);
@@ -39,13 +40,41 @@ client.on('ready', (client) => {
 client.on('interactionCreate', async (interaction) => {
 	if (!interaction.isChatInputCommand()) return;
 	const slashCommand = slashCommands.find(command => command.name === interaction.command?.name);
-	if (slashCommand) {
+	if (!slashCommand) return;
+
+	if (slashCommand.name === CommandNames.changeBot) {
 		const botIndex = bots.findIndex(bot => bot.name === interaction.options.getSubcommand());
 		currentBotIndex = botIndex;
 		interaction.guild?.members.me?.setNickname(bots[currentBotIndex].name);
 		interaction.reply(`ChatBot is changed to  ${bots[currentBotIndex].name}.\n ${bots[currentBotIndex].greetingMessage}`);
 		if (bots[currentBotIndex].profileImage)
 			client.user?.setAvatar(bots[currentBotIndex].profileImage || '');
+	}
+	if (slashCommand.name === CommandNames.summarize) {
+		interaction.deferReply();
+		const hours = interaction.options.getNumber('n') || DEFAULT_SUMMARIZE_HOUR;
+		const logStartTimestamp = new Date().getTime() - (hours * 60 * 60 * 1000);
+		const includeBot = interaction.options.getBoolean('includebot');
+		const channelLogs: Collection<string, Message>[] = [];
+		let lastId = interaction.channel?.lastMessageId ?? undefined;
+		let lastTimeStamp = interaction.channel?.lastMessage?.createdTimestamp || new Date().getTime();
+		while (lastTimeStamp > logStartTimestamp) {
+			const logs = await interaction.channel?.messages.fetch({ limit: 100, before: lastId });
+			if (!logs) break;
+			lastTimeStamp = logs?.last()?.createdTimestamp || 0;
+			lastId = logs?.lastKey();
+			channelLogs.push(logs);
+		}
+		const concated = new Collection<string, Message>().concat(...channelLogs).reverse();
+		concated.sweep(message => message.createdTimestamp <= logStartTimestamp || (!includeBot && message.author.bot));
+		const messages = concated.map(logs => `${logs.author.username} : ${logs.cleanContent}`);
+		const summarized = await summarizeDiscordLogs(openAIApi, messages, interaction.locale);
+
+		if (!summarized) {
+			interaction.followUp('Sorry. Failed to Summarization.');
+			return;
+		}
+		interaction.followUp(`--- Here is Summarization of last ${hours} hours. --- \n ${summarized}`);
 	}
 });
 
