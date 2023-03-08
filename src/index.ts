@@ -5,7 +5,7 @@ import { ChannelType, Client, Guild, GuildBasedChannel, Message, StageChannel } 
 import { Configuration, OpenAIApi } from 'openai';
 import { DefaultClientIntents } from './config/client';
 import { chatCompletion } from './functions/openai';
-import { DefaultChatbot } from './config/chatbot';
+import { DefaultChatbot, ERROR_MESSAGE_500 } from './config/chatbot';
 import { getChangeChatbotCommand } from './functions/commands';
 import { get_encoding } from '@dqbd/tiktoken';
 
@@ -88,6 +88,7 @@ client.on('messageCreate', (msg: Message) => {
 			bots[currentBotIndex].logs.push({ content: { role: 'assistant', content: answer }, token: data.usage?.completion_tokens });
 		}).catch((error: Error) => {
 			console.log(`[Error] :: ${error.message},`);
+			msg.reply(ERROR_MESSAGE_500);
 		});
 
 });
