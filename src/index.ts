@@ -36,7 +36,8 @@ const slashCommands = [getChangeChatbotCommand(bots.map(bot => bot.name)), Summa
 client.on('ready', (client) => {
 	console.log(`Logged in as ${client.user?.tag}!`);
 	client.application.commands.set(slashCommands);
-	const initialBot = bots.find(bot => bot.name === client.user?.username);
+
+	const initialBot = bots.find(bot => bot.name === client.guilds.cache.at(0)?.members.me?.nickname);
 	if (initialBot) {
 		currentBotIndex = bots.indexOf(initialBot);
 	}
