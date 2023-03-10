@@ -9,6 +9,7 @@ import { DefaultChatbot, ERROR_MESSAGE_500 } from './config/chatbot';
 import { getChangeChatbotCommand, SummarizeCommand } from './functions/commands';
 import { get_encoding } from '@dqbd/tiktoken';
 import { CommandNames, DEFAULT_SUMMARIZE_HOUR } from './config/commands';
+import { PromptColor, appLog, chatbotLog, coloredLog, errorLog } from './functions/logging';
 
 const tokenizer = get_encoding('cl100k_base');
 
@@ -19,7 +20,7 @@ const openAIApi = new OpenAIApi(new Configuration({ apiKey: apiKey }));
 
 
 const botConfigs: ChatBotConfig[] = readBotConfigs('./bots');
-console.log('[System] Read and initialize bots... :: ', ...botConfigs.map(config => config.name));
+console.log(appLog(`Reading bot config files:  ${coloredLog(botConfigs.map(config => config.name).join(', '), PromptColor.Cyan, true)}`));
 const bots: ChatBot[] = botConfigs.map(config => (
 	{
 		...config,
@@ -34,11 +35,13 @@ let currentBotIndex = 0;
 const slashCommands = [getChangeChatbotCommand(bots.map(bot => bot.name)), SummarizeCommand];
 
 client.on('ready', (client) => {
-	console.log(`Logged in as ${client.user?.tag}!`);
+	console.log(appLog(`Logged in as username: ${coloredLog(client.user?.tag, PromptColor.Cyan, true)}!`));
 	client.application.commands.set(slashCommands);
-	const initialBot = bots.find(bot => bot.name === client.user?.username);
+
+	const initialBot = bots.find(bot => bot.name === client.guilds.cache.at(0)?.members.me?.nickname);
 	if (initialBot) {
 		currentBotIndex = bots.indexOf(initialBot);
+		console.log(appLog(`Bot initialized as ${coloredLog(initialBot.name, PromptColor.Cyan, true)}`));
 	}
 });
 client.on('interactionCreate', async (interaction) => {
@@ -78,7 +81,7 @@ client.on('interactionCreate', async (interaction) => {
 			interaction.followUp('Sorry. Failed to Summarization.');
 			return;
 		}
-		interaction.followUp(`--- Here is Summarization of last ${hours} hours. --- \n ${summarized}`);
+		interaction.followUp(`-- - Here is Summarization of last ${hours} hours. -- - \n ${summarized}`);
 	}
 });
 
@@ -105,7 +108,7 @@ client.on('messageCreate', (msg: Message) => {
 		!msg.mentions.has(client.user)) return;
 
 	const question = msg.cleanContent;
-	console.log(`[Question] ${msg.author?.username} :: ${question}`);
+	console.log(chatbotLog('Question', msg.author?.username || '', question));
 
 	msg.channel.sendTyping();
 
@@ -114,13 +117,13 @@ client.on('messageCreate', (msg: Message) => {
 			if (!data) return;
 			const answer: string = data.choices?.[0].message?.content || '';
 			msg.reply(answer);
-			console.log(`[Answer] chatGPT :: ${answer}`);
+			console.log(chatbotLog('Answer', bots[currentBotIndex].name, answer));
 			//Push to log 
 			if (!data.usage?.prompt_tokens || !data.usage?.completion_tokens) return;
 			bots[currentBotIndex].logs.push({ content: { role: 'user', content: question }, token: data.usage?.prompt_tokens });
 			bots[currentBotIndex].logs.push({ content: { role: 'assistant', content: answer }, token: data.usage?.completion_tokens });
 		}).catch((error: Error) => {
-			console.log(`[Error] :: ${error.message},`);
+			console.log(errorLog(error.message));
 			msg.reply(ERROR_MESSAGE_500);
 		});
 
