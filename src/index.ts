@@ -36,6 +36,10 @@ const slashCommands = [getChangeChatbotCommand(bots.map(bot => bot.name)), Summa
 client.on('ready', (client) => {
 	console.log(`Logged in as ${client.user?.tag}!`);
 	client.application.commands.set(slashCommands);
+	const initialBot = bots.find(bot => bot.name === client.user?.username);
+	if (initialBot) {
+		currentBotIndex = bots.indexOf(initialBot);
+	}
 });
 client.on('interactionCreate', async (interaction) => {
 	if (!interaction.isChatInputCommand()) return;
