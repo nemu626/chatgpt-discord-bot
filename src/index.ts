@@ -15,7 +15,6 @@ const token: string = process.env.DISCORD_BOT_TOKEN || '';
 const apiKey: string = process.env.OPENAI_APIKEY || '';
 const openAIApi = new OpenAIApi(new Configuration({ apiKey: apiKey }));
 
-
 const chatbotManager = ChatbotManager.fromFiles('./bots');
 console.log(appLog(`chatbot load from files:  ${coloredLog(chatbotManager.botNames.join(', '), PromptColor.Cyan, true)}`));
 
@@ -43,7 +42,7 @@ client.on('interactionCreate', async (interaction) => {
 		chatbotManager.change(interaction.guild?.id || '', bot.name);
 		interaction.guild?.members.me?.setNickname(bot.name);
 		console.log(appLog(`Guild ${coloredLog(interaction.guild?.name || '', PromptColor.Green, true)}'s chatbot is changed to ${coloredLog(bot.name, PromptColor.Cyan, true)}.`));
-		interaction.reply(`ChatBot is changed to  ${bot.name}.\n ${bot.greetingMessage}`);
+		interaction.reply(`*** ChatBot is changed to  ${bot.name}.*** \n ${bot.greetingMessage}`);
 		if (bot.profileImage)
 			client.user?.setAvatar(bot.profileImage || '');
 	}
@@ -71,7 +70,7 @@ client.on('interactionCreate', async (interaction) => {
 			interaction.followUp('Sorry. Failed to Summarization.');
 			return;
 		}
-		interaction.followUp(`--- Here is Summarization of last ${hours} hours. --- \n ${summarized}`);
+		interaction.followUp(`*** ### Here is Summarization of last ${hours} hours. ### *** \n ${summarized}`);
 	}
 });
 
