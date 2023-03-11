@@ -5,7 +5,6 @@ export type ChatBotConfig = {
     name: string;
     maxPromptToken?: number;
     temperature?: number;
-    profileImage?: string;
     greetingMessage?: string;
     systemMessage?: string;
 }

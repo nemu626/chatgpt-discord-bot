@@ -43,8 +43,6 @@ client.on('interactionCreate', async (interaction) => {
 		interaction.guild?.members.me?.setNickname(bot.name);
 		console.log(appLog(`Guild ${coloredLog(interaction.guild?.name || '', PromptColor.Green, true)}'s chatbot is changed to ${coloredLog(bot.name, PromptColor.Cyan, true)}.`));
 		interaction.reply(`*** ChatBot is changed to  ${bot.name}.*** \n ${bot.greetingMessage}`);
-		if (bot.profileImage)
-			client.user?.setAvatar(bot.profileImage || '');
 	}
 	if (slashCommand.name === CommandNames.summarize) {
 		interaction.deferReply();
@@ -78,8 +76,6 @@ client.on('guildCreate', (guild: Guild) => {
 	const bot = chatbotManager.current(guild.id);
 	if (bot) {
 		guild.members.me?.setNickname(bot.name);
-		if (bot.profileImage)
-			client.user?.setAvatar(bot.profileImage || '');
 	}
 });
 
