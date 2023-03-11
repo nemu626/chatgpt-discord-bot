@@ -1,14 +1,15 @@
+import { Client, Collection, Guild, Message, StageChannel } from 'discord.js';
 import 'dotenv/config';
-import { readBotConfigs } from './functions/chatbot';
-import { ChatBot, ChatBotConfig } from './types/index.d';
-import { ChannelType, Client, Collection, Guild, GuildBasedChannel, Message, StageChannel } from 'discord.js';
 import { Configuration, OpenAIApi } from 'openai';
-import { DefaultClientIntents } from './config/client';
-import { chatCompletion, getTokenLength, summarizeDiscordLogs } from './functions/openai';
+import { ChatbotManager } from './classes/ChatbotManager';
 import { DefaultChatbot, ERROR_MESSAGE_500 } from './config/chatbot';
-import { getChangeChatbotCommand, SummarizeCommand } from './functions/commands';
+import { DefaultClientIntents } from './config/client';
 import { CommandNames, DEFAULT_SUMMARIZE_HOUR } from './config/commands';
+import { readBotConfigs } from './functions/chatbot';
+import { SummarizeCommand, getChangeChatbotCommand } from './functions/commands';
 import { PromptColor, appLog, chatbotLog, coloredLog, errorLog } from './functions/logging';
+import { chatCompletion, summarizeDiscordLogs } from './functions/openai';
+import { ChatBotConfig } from './types/index.d';
 
 
 const client = new Client({ intents: DefaultClientIntents });
@@ -17,30 +18,20 @@ const apiKey: string = process.env.OPENAI_APIKEY || '';
 const openAIApi = new OpenAIApi(new Configuration({ apiKey: apiKey }));
 
 
-const botConfigs: ChatBotConfig[] = readBotConfigs('./bots');
-console.log(appLog(`Reading bot config files:  ${coloredLog(botConfigs.map(config => config.name).join(', '), PromptColor.Cyan, true)}`));
-const bots: ChatBot[] = botConfigs.map(config => (
-	{
-		...config,
-		logs: [],
-		systemPrompt: config.systemMessage ? {
-			content: { content: config.systemMessage, role: 'system' },
-			token: getTokenLength(config.systemMessage),
-		} : undefined
-	}));
+const chatbotManager = ChatbotManager.fromFiles('./bots');
+console.log(appLog(`chatbot load from files:  ${coloredLog(chatbotManager.botNames.join(', '), PromptColor.Cyan, true)}`));
 
-let currentBotIndex = 0;
-const slashCommands = [getChangeChatbotCommand(bots.map(bot => bot.name)), SummarizeCommand];
+const slashCommands = [getChangeChatbotCommand(chatbotManager.botNames), SummarizeCommand];
 
-client.on('ready', (client) => {
+client.on('ready', async (client) => {
 	console.log(appLog(`Logged in as username: ${coloredLog(client.user?.tag, PromptColor.Cyan, true)}!`));
 	client.application.commands.set(slashCommands);
 
-	const initialBot = bots.find(bot => bot.name === client.guilds.cache.at(0)?.members.me?.nickname);
-	if (initialBot) {
-		currentBotIndex = bots.indexOf(initialBot);
-		console.log(appLog(`Bot initialized as ${coloredLog(initialBot.name, PromptColor.Cyan, true)}`));
-	}
+	const guilds = client.guilds.cache;
+	guilds.forEach(guild => {
+		const initialBot = chatbotManager.getByName(guild.members.me?.nickname || '');
+		chatbotManager.change(guild.id, initialBot?.name || '');
+	});
 });
 client.on('interactionCreate', async (interaction) => {
 	if (!interaction.isChatInputCommand()) return;
@@ -48,12 +39,13 @@ client.on('interactionCreate', async (interaction) => {
 	if (!slashCommand) return;
 
 	if (slashCommand.name === CommandNames.changeBot) {
-		const botIndex = bots.findIndex(bot => bot.name === interaction.options.getSubcommand());
-		currentBotIndex = botIndex;
-		interaction.guild?.members.me?.setNickname(bots[currentBotIndex].name);
-		interaction.reply(`ChatBot is changed to  ${bots[currentBotIndex].name}.\n ${bots[currentBotIndex].greetingMessage}`);
-		if (bots[currentBotIndex].profileImage)
-			client.user?.setAvatar(bots[currentBotIndex].profileImage || '');
+		const bot = chatbotManager.findByName(interaction.options.getSubcommand());
+		if (!bot) return;
+		chatbotManager.change(interaction.guild?.id || '', bot.name);
+		interaction.guild?.members.me?.setNickname(bot.name);
+		interaction.reply(`ChatBot is changed to  ${bot.name}.\n ${bot.greetingMessage}`);
+		if (bot.profileImage)
+			client.user?.setAvatar(bot.profileImage || '');
 	}
 	if (slashCommand.name === CommandNames.summarize) {
 		interaction.deferReply();
@@ -79,22 +71,16 @@ client.on('interactionCreate', async (interaction) => {
 			interaction.followUp('Sorry. Failed to Summarization.');
 			return;
 		}
-		interaction.followUp(`-- - Here is Summarization of last ${hours} hours. -- - \n ${summarized}`);
+		interaction.followUp(`--- Here is Summarization of last ${hours} hours. --- \n ${summarized}`);
 	}
 });
 
 client.on('guildCreate', (guild: Guild) => {
-	if (bots[currentBotIndex]) {
-		guild.members.me?.setNickname(bots[currentBotIndex].name);
-		if (bots[currentBotIndex].profileImage)
-			client.user?.setAvatar(bots[currentBotIndex].profileImage || '');
-	}
-	const mainChannel: GuildBasedChannel | undefined = guild.channels.cache.find(ch =>
-		ch.type === ChannelType.GuildText &&
-		!!guild.members.me &&
-		ch.permissionsFor(guild.members.me).has('SendMessages'));
-	if (mainChannel?.isTextBased() && process.env.GREETING_MESSAGE) {
-		mainChannel.send(process.env.GREETING_MESSAGE);
+	const bot = chatbotManager.current(guild.id);
+	if (bot) {
+		guild.members.me?.setNickname(bot.name);
+		if (bot.profileImage)
+			client.user?.setAvatar(bot.profileImage || '');
 	}
 });
 
@@ -109,17 +95,18 @@ client.on('messageCreate', (msg: Message) => {
 	console.log(chatbotLog('Question', msg.author?.username || '', question));
 
 	msg.channel.sendTyping();
+	const bot = chatbotManager.current(msg.guild?.id || '');
 
-	chatCompletion(openAIApi, question, bots[currentBotIndex] || DefaultChatbot)
+	chatCompletion(openAIApi, question, bot || DefaultChatbot)
 		.then(data => {
 			if (!data) return;
 			const answer: string = data.choices?.[0].message?.content || '';
 			msg.reply(answer);
-			console.log(chatbotLog('Answer', bots[currentBotIndex].name, answer));
+			console.log(chatbotLog('Answer', bot.name, answer));
 			//Push to log 
 			if (!data.usage?.prompt_tokens || !data.usage?.completion_tokens) return;
-			bots[currentBotIndex].logs.push({ content: { role: 'user', content: question }, token: data.usage?.prompt_tokens });
-			bots[currentBotIndex].logs.push({ content: { role: 'assistant', content: answer }, token: data.usage?.completion_tokens });
+			bot.logs.push({ content: { role: 'user', content: question }, token: data.usage?.prompt_tokens });
+			bot.logs.push({ content: { role: 'assistant', content: answer }, token: data.usage?.completion_tokens });
 		}).catch((error: Error) => {
 			console.log(errorLog(error.message));
 			msg.reply(ERROR_MESSAGE_500);
