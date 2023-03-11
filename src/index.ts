@@ -4,14 +4,12 @@ import { ChatBot, ChatBotConfig } from './types/index.d';
 import { ChannelType, Client, Collection, Guild, GuildBasedChannel, Message, StageChannel } from 'discord.js';
 import { Configuration, OpenAIApi } from 'openai';
 import { DefaultClientIntents } from './config/client';
-import { chatCompletion, summarizeDiscordLogs } from './functions/openai';
+import { chatCompletion, getTokenLength, summarizeDiscordLogs } from './functions/openai';
 import { DefaultChatbot, ERROR_MESSAGE_500 } from './config/chatbot';
 import { getChangeChatbotCommand, SummarizeCommand } from './functions/commands';
-import { get_encoding } from '@dqbd/tiktoken';
 import { CommandNames, DEFAULT_SUMMARIZE_HOUR } from './config/commands';
 import { PromptColor, appLog, chatbotLog, coloredLog, errorLog } from './functions/logging';
 
-const tokenizer = get_encoding('cl100k_base');
 
 const client = new Client({ intents: DefaultClientIntents });
 const token: string = process.env.DISCORD_BOT_TOKEN || '';
@@ -27,7 +25,7 @@ const bots: ChatBot[] = botConfigs.map(config => (
 		logs: [],
 		systemPrompt: config.systemMessage ? {
 			content: { content: config.systemMessage, role: 'system' },
-			token: tokenizer.encode(config.systemMessage).length
+			token: getTokenLength(config.systemMessage),
 		} : undefined
 	}));
 
