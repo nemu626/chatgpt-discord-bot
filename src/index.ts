@@ -5,11 +5,9 @@ import { ChatbotManager } from './classes/ChatbotManager';
 import { DefaultChatbot, ERROR_MESSAGE_500 } from './config/chatbot';
 import { DefaultClientIntents } from './config/client';
 import { CommandNames, DEFAULT_SUMMARIZE_HOUR } from './config/commands';
-import { readBotConfigs } from './functions/chatbot';
 import { SummarizeCommand, getChangeChatbotCommand } from './functions/commands';
 import { PromptColor, appLog, chatbotLog, coloredLog, errorLog } from './functions/logging';
 import { chatCompletion, summarizeDiscordLogs } from './functions/openai';
-import { ChatBotConfig } from './types/index.d';
 
 
 const client = new Client({ intents: DefaultClientIntents });
@@ -31,6 +29,7 @@ client.on('ready', async (client) => {
 	guilds.forEach(guild => {
 		const initialBot = chatbotManager.getByName(guild.members.me?.nickname || '');
 		chatbotManager.change(guild.id, initialBot?.name || '');
+		console.log(appLog(`logged in to guild ${coloredLog(guild.name, PromptColor.Green, true)} as nickname ${coloredLog(initialBot?.name || '', PromptColor.Cyan, true)}.`));
 	});
 });
 client.on('interactionCreate', async (interaction) => {
@@ -43,6 +42,7 @@ client.on('interactionCreate', async (interaction) => {
 		if (!bot) return;
 		chatbotManager.change(interaction.guild?.id || '', bot.name);
 		interaction.guild?.members.me?.setNickname(bot.name);
+		console.log(appLog(`Guild ${coloredLog(interaction.guild?.name || '', PromptColor.Green, true)}'s chatbot is changed to ${coloredLog(bot.name, PromptColor.Cyan, true)}.`));
 		interaction.reply(`ChatBot is changed to  ${bot.name}.\n ${bot.greetingMessage}`);
 		if (bot.profileImage)
 			client.user?.setAvatar(bot.profileImage || '');
