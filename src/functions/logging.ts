@@ -12,7 +12,7 @@ const BOLD = '\x1b[1m';
 const RESET = '\u001b[0m';
 
 export const coloredLog = (log: string, color: PromptColor, isBold?: boolean): string =>
-	`${color}${isBold ? BOLD : ''}${log} ${RESET}`;
+	`${color}${isBold ? BOLD : ''}${log}${RESET}`;
 
 export const appLog = (log: string): string => `${coloredLog('[System]', PromptColor.Blue, true)} ${log}`;
 export const errorLog = (log: string): string => `${coloredLog('[Error]', PromptColor.Red, true)} ${log}`;
