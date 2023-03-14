@@ -1,5 +1,4 @@
-import { ChatBotConfig } from '../types';
-import { Chatbot } from './Chatbot';
+import { ChatBotConfig, ChatBot } from '../types';
 import path from 'path';
 import fs from 'fs';
 import { DefaultChatbot } from '../config/chatbot';
@@ -7,7 +6,7 @@ import { getTokenLength } from '../functions/openai';
 
 
 export class ChatbotManager {
-	private bots: Chatbot[];
+	private bots: ChatBot[];
 	public indexGuildMap: Map<string, number>;
 
 	constructor(configs?: ChatBotConfig[]) {
@@ -28,11 +27,11 @@ export class ChatbotManager {
 	get botNames(): string[] {
 		return this.bots.map(bot => bot.name);
 	}
-	public getByName(botName: string): Chatbot | undefined {
+	public getByName(botName: string): ChatBot | undefined {
 		return this.bots.find(bot => bot.name === botName);
 	}
 
-	public current(guildId: string): Chatbot {
+	public current(guildId: string): ChatBot {
 		return this.bots[this.indexGuildMap.get(guildId) || 0];
 	}
 
@@ -42,7 +41,7 @@ export class ChatbotManager {
 		this.indexGuildMap.set(guildId, botIndex);
 	}
 
-	public findByName(botName: string): Chatbot | undefined {
+	public findByName(botName: string): ChatBot | undefined {
 		return this.bots.find(bot => bot.name === botName);
 	}
 
