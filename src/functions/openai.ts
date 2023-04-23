@@ -1,7 +1,7 @@
 import { DEFAULT_TEMPERATURE, DEFAULT_MAX_PROMPT_TOKEN } from './../config/chatbot';
 import { ChatBot, ChatMessageWithToken } from './../types/index.d';
 import { CreateChatCompletionResponse, OpenAIApi, CreateChatCompletionRequest, ChatCompletionRequestMessage } from 'openai';
-import { OPENAI_CHAT_MODEL, SUMMARIZE_INPUT_TOKEN_MAX, SUMMARIZE_SYSTEM_MESSAGE } from '../config/openai';
+import { DEFAULT_OPENAI_CHAT_MODEL, SUMMARIZE_INPUT_TOKEN_MAX, SUMMARIZE_SYSTEM_MESSAGE } from '../config/openai';
 import { get_encoding } from '@dqbd/tiktoken';
 import { LocaleString } from 'discord.js';
 
@@ -10,7 +10,7 @@ const tokenizer = get_encoding('cl100k_base');
 export const chatCompletion = async (openai: OpenAIApi, question: string, bot: ChatBot): Promise<CreateChatCompletionResponse> => {
 	const logPrompts = createLogPrompt(bot.logs, bot.maxPromptToken || DEFAULT_MAX_PROMPT_TOKEN, bot.systemPrompt);
 	const response = await openai.createChatCompletion({
-		model: OPENAI_CHAT_MODEL,
+		model: process.env.OPENAI_MODEL || DEFAULT_OPENAI_CHAT_MODEL,
 		temperature: bot.temperature ?? DEFAULT_TEMPERATURE,
 		messages: [...logPrompts, { 'role': 'user', 'content': question }]
 	});
@@ -25,7 +25,7 @@ export const summarizeDiscordLogs = async (openai: OpenAIApi, logs: string[], la
 		content = content.concat(logs[i], '\n');
 	}
 	const response = await openai.createChatCompletion({
-		model: OPENAI_CHAT_MODEL,
+		model: process.env.OPENAI_MODEL || DEFAULT_OPENAI_CHAT_MODEL,
 		temperature: DEFAULT_TEMPERATURE,
 		messages: [{ role: 'system', content: SUMMARIZE_SYSTEM_MESSAGE[language || 'en-US'] || '' }, { role: 'user', content: content }]
 	});
