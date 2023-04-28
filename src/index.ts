@@ -8,12 +8,15 @@ import { CommandNames, DEFAULT_SUMMARIZE_HOUR } from './config/commands';
 import { SummarizeCommand, getChangeChatbotCommand } from './functions/commands';
 import { PromptColor, appLog, chatbotLog, coloredLog, errorLog } from './functions/logging';
 import { chatCompletion, summarizeDiscordLogs } from './functions/openai';
+import { DEFAULT_OPENAI_CHAT_MODEL } from './config/openai';
 
 
 const client = new Client({ intents: DefaultClientIntents });
 const token: string = process.env.DISCORD_BOT_TOKEN || '';
 const apiKey: string = process.env.OPENAI_APIKEY || '';
 const openAIApi = new OpenAIApi(new Configuration({ apiKey: apiKey }));
+
+console.log(`OpenAI Model: ${coloredLog(process.env.OPENAI_MODEL || DEFAULT_OPENAI_CHAT_MODEL, PromptColor.Cyan, true)}`);
 
 const chatbotManager = ChatbotManager.fromFiles('./bots');
 console.log(appLog(`chatbot load from files:  ${coloredLog(chatbotManager.botNames.join(', '), PromptColor.Cyan, true)}`));
