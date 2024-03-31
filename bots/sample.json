@@ -6,5 +6,6 @@
     "systemMessage": "You are helpful chatbot.",
     "greetingMessage": "Hello, I am chatGPT. Mention me and I will answer you.",
     "maxOutputTokenSize": 4096,
-    "threadTimeLimitMinutes": 30
+    "threadTimeLimitMinutes": 30,
+    "profileImage": "sample.png"
 }
