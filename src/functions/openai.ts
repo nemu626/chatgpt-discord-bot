@@ -15,6 +15,7 @@ export const chatCompletion = async (model: OpenAIApi | Anthropic, question: str
 		const response = await model.createChatCompletion({
 			model: bot.model || DEFAULT_OPENAI_CHAT_MODEL,
 			temperature: bot.temperature ?? DEFAULT_TEMPERATURE,
+			max_tokens: bot.maxOutputTokenSize ?? DEFAULT_MAX_PROMPT_TOKEN,
 			messages: [
 				{ 'role': 'system', 'content': bot.systemMessage}, 
 				...logPrompts, 
