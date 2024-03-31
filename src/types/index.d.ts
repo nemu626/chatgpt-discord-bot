@@ -10,6 +10,7 @@ export type ChatBotConfig = {
     greetingMessage?: string;
     systemMessage?: string;
     threadTimeLimitMinutes?: number;
+    profileImage: string;
 }
 
 export type Message = {

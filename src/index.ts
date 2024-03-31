@@ -2,7 +2,7 @@ import { Client, Collection, Guild, Message, StageChannel } from 'discord.js';
 import 'dotenv/config';
 import { Configuration, OpenAIApi } from 'openai';
 import { ChatbotManager } from './classes/ChatbotManager';
-import { DefaultChatbot, ERROR_MESSAGE_500 } from './config/chatbot';
+import { DefaultChatbot, ERROR_MESSAGE_500, IMAGE_PATH } from './config/chatbot';
 import { DefaultClientIntents } from './config/client';
 import { CommandNames, DEFAULT_SUMMARIZE_HOUR } from './config/commands';
 import { SummarizeCommand, getChangeChatbotCommand } from './functions/commands';
@@ -10,6 +10,7 @@ import { PromptColor, appLog, chatbotLog, coloredLog, errorLog } from './functio
 import { chatCompletion, summarizeDiscordLogs } from './functions/openai';
 import { DEFAULT_OPENAI_CHAT_MODEL } from './config/openai';
 import { Anthropic } from '@anthropic-ai/sdk';
+import { readImageAsBase64 } from './functions/chatbot';
 
 
 const client = new Client({ intents: DefaultClientIntents });
@@ -52,6 +53,9 @@ client.on('interactionCreate', async (interaction) => {
 		chatbotManager.change(interaction.guild?.id || '', bot.name);
 		interaction.guild?.members.me?.setNickname(bot.name);
 		console.log(appLog(`Guild ${coloredLog(interaction.guild?.name || '', PromptColor.Green, true)}'s chatbot is changed to ${coloredLog(bot.name, PromptColor.Cyan, true)}.`));
+		if (bot.profileImage) {
+			client.user?.setAvatar(readImageAsBase64(IMAGE_PATH + bot.profileImage))
+		}
 		interaction.reply(`*** ChatBot is changed to  ${bot.name}.*** \n ${bot.greetingMessage}`);
 	}
 	if (slashCommand.name === CommandNames.summarize) {
