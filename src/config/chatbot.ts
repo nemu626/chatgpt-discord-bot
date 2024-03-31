@@ -13,7 +13,7 @@ export const DefaultChatbotConfig: ChatBotConfig = {
 	name: 'chatgpt',
 	platform: 'openai',
 	model: 'gpt-4-turbo-preview',
-	maxContextTokenSize: DEFAULT_MAX_PROMPT_TOKEN,
+	maxOutputTokenSize: DEFAULT_MAX_PROMPT_TOKEN,
 	temperature: DEFAULT_TEMPERATURE,
 	greetingMessage: DEFAULT_GREETING_MESSAGE,
 	systemMessage: DEFAULT_SYSTEM_MESSAGE,

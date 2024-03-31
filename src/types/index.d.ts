@@ -5,7 +5,7 @@ export type ChatBotConfig = {
     platform: AiPlatform;
     model: string;
     name: string;
-    maxContextTokenSize?: number;
+    maxOutputTokenSize?: number;
     temperature?: number;
     greetingMessage?: string;
     systemMessage?: string;
