@@ -102,8 +102,8 @@ client.on('messageCreate', (msg: Message) => {
 	msg.channel.sendTyping();
 	const bot = chatbotManager.current(msg.guild?.id || '');
 
-
-	chatCompletion(openAIApi, question, bot || DefaultChatbot)
+	const model = bot.platform === 'openai' ? openAIApi : anthropic;
+	chatCompletion(model, question, bot || DefaultChatbot)
 		.then(({ message, inputToken, outputToken }) => {
 			if (!message) return;
 			msg.reply(message);

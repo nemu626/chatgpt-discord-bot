@@ -10,8 +10,8 @@ import { MessageParam } from '@anthropic-ai/sdk/resources';
 const tokenizer = get_encoding('cl100k_base');
 
 export const chatCompletion = async (model: OpenAIApi | Anthropic, question: string, bot: ChatBot): Promise<ChatResponseData> => {
-	const logPrompts = createLogPrompt(bot.logs, bot.maxPromptToken || DEFAULT_MAX_PROMPT_TOKEN, bot.systemPrompt);
-	if (model instanceof OpenAIApi) {
+	if (model instanceof OpenAIApi && bot.platform === 'openai') {
+		const logPrompts = createLogPrompt(bot.logs, bot.maxPromptToken || DEFAULT_MAX_PROMPT_TOKEN, bot.systemPrompt);
 		const response = await model.createChatCompletion({
 			model: bot.model || DEFAULT_OPENAI_CHAT_MODEL,
 			temperature: bot.temperature ?? DEFAULT_TEMPERATURE,
@@ -22,12 +22,13 @@ export const chatCompletion = async (model: OpenAIApi | Anthropic, question: str
 			inputToken: response.data.usage?.prompt_tokens,
 			outputToken: response.data.usage?.completion_tokens,
 		}
-	} else {
-		const nosystemLogs = convertAnthropicLogPrompt(logPrompts)
+	} else if (model instanceof Anthropic && bot.platform === 'anthropic'){
+		const logPrompts = createLogPrompt(bot.logs, bot.maxPromptToken || DEFAULT_MAX_PROMPT_TOKEN) as MessageParam[];
 		const response = await model.messages.create({
+			system: bot.systemMessage,
 			model: bot.model || DEFAULT_CLAUDE3_CHAT_MODEL,
 			temperature: bot.temperature ?? DEFAULT_TEMPERATURE,
-			messages: [...nosystemLogs, { 'role': 'user', 'content': question }],
+			messages: [...logPrompts, { 'role': 'user', 'content': question }],
 			max_tokens: bot.maxPromptToken ?? DEFAULT_MAX_PROMPT_TOKEN,
 		})
 		return {
@@ -36,6 +37,7 @@ export const chatCompletion = async (model: OpenAIApi | Anthropic, question: str
 			outputToken: response.usage.output_tokens,
 		}
 	}
+	return {};
 
 };
 
@@ -70,11 +72,6 @@ export const createLogPrompt = (messages: ChatMessageWithToken[], tokenLimit: nu
 	if (systemMessage) result.push(systemMessage.content);
 	return result.reverse();
 };
-
-export const convertAnthropicLogPrompt = (logPrompt: ChatCompletionRequestMessage[]): MessageParam[] => {
-	return logPrompt.map(log => log.role === 'system' ? { ...log, role: 'user' } : log) as MessageParam[];
-};
-
 
 export const getTokenLength = (message: string): number => {
 	return tokenizer.encode(message).length;
