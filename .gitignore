@@ -4,5 +4,6 @@ lib
 .env
 
 bots/*.json
+!bots/sample.json
 bots/images/*
 !bots/images/sample.png
