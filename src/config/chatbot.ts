@@ -12,7 +12,7 @@ export const ERROR_MESSAGE_500 = ' Sorry, chatGPT API is temporarily not working
 export const DefaultChatbotConfig: ChatBotConfig = {
 	name: 'chatgpt',
 	platform: 'openai',
-	model: 'gpt3.5-turbo',
+	model: 'gpt-4-turbo-preview',
 	maxPromptToken: DEFAULT_MAX_PROMPT_TOKEN,
 	temperature: DEFAULT_TEMPERATURE,
 	greetingMessage: DEFAULT_GREETING_MESSAGE,
