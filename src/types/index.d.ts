@@ -14,11 +14,13 @@ export type ChatBotConfig = {
 export type ChatMessageWithToken = {
     content: ChatCompletionRequestMessage;
     token: number;
+    timestamp: Date;
 }
 
 export type AnthropicChatMessageWithToken = {
     content: MessageParam;
     token: number;
+    timestamp: Date;
 }
 
 export type ChatBot = ChatBotConfig & {
