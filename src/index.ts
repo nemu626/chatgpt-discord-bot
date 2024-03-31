@@ -54,7 +54,7 @@ client.on('interactionCreate', async (interaction) => {
 		interaction.guild?.members.me?.setNickname(bot.name);
 		console.log(appLog(`Guild ${coloredLog(interaction.guild?.name || '', PromptColor.Green, true)}'s chatbot is changed to ${coloredLog(bot.name, PromptColor.Cyan, true)}.`));
 		if (bot.profileImage) {
-			client.user?.setAvatar(readImageAsBase64(IMAGE_PATH + bot.profileImage))
+			client.user?.setAvatar(IMAGE_PATH + bot.profileImage)
 		}
 		interaction.reply(`*** ChatBot is changed to  ${bot.name}.*** \n ${bot.greetingMessage}`);
 	}
@@ -105,9 +105,10 @@ client.on('messageCreate', (msg: Message) => {
 
 	msg.channel.sendTyping();
 	const bot = chatbotManager.current(msg.guild?.id || '');
+	const questionWithAuthor = `${msg.member?.displayName} : '${question}'`
 
 	const model = bot.platform === 'openai' ? openAIApi : anthropic;
-	chatCompletion(model, question, bot || DefaultChatbot)
+	chatCompletion(model, questionWithAuthor, bot || DefaultChatbot)
 		.then(({ message, inputToken, outputToken }) => {
 			if (!message) return;
 			msg.reply(message);
