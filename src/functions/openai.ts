@@ -1,20 +1,42 @@
-import { DEFAULT_TEMPERATURE, DEFAULT_MAX_PROMPT_TOKEN } from './../config/chatbot';
-import { ChatBot, ChatMessageWithToken } from './../types/index.d';
+import { DEFAULT_TEMPERATURE, DEFAULT_MAX_PROMPT_TOKEN } from '../config/chatbot';
+import { AnthropicChatMessageWithToken, ChatBot, ChatMessageWithToken, ChatResponseData } from '../types';
 import { CreateChatCompletionResponse, OpenAIApi, CreateChatCompletionRequest, ChatCompletionRequestMessage } from 'openai';
-import { DEFAULT_OPENAI_CHAT_MODEL, SUMMARIZE_INPUT_TOKEN_MAX, SUMMARIZE_SYSTEM_MESSAGE } from '../config/openai';
+import { DEFAULT_CLAUDE3_CHAT_MODEL, DEFAULT_OPENAI_CHAT_MODEL, SUMMARIZE_INPUT_TOKEN_MAX, SUMMARIZE_SYSTEM_MESSAGE } from '../config/openai';
 import { get_encoding } from '@dqbd/tiktoken';
 import { LocaleString } from 'discord.js';
+import Anthropic from '@anthropic-ai/sdk';
+import { MessageParam } from '@anthropic-ai/sdk/resources';
 
 const tokenizer = get_encoding('cl100k_base');
 
-export const chatCompletion = async (openai: OpenAIApi, question: string, bot: ChatBot): Promise<CreateChatCompletionResponse> => {
+export const chatCompletion = async (model: OpenAIApi | Anthropic, question: string, bot: ChatBot): Promise<ChatResponseData> => {
 	const logPrompts = createLogPrompt(bot.logs, bot.maxPromptToken || DEFAULT_MAX_PROMPT_TOKEN, bot.systemPrompt);
-	const response = await openai.createChatCompletion({
-		model: process.env.OPENAI_MODEL || DEFAULT_OPENAI_CHAT_MODEL,
-		temperature: bot.temperature ?? DEFAULT_TEMPERATURE,
-		messages: [...logPrompts, { 'role': 'user', 'content': question }]
-	});
-	return response.data;
+	if (model instanceof OpenAIApi) {
+		const response = await model.createChatCompletion({
+			model: bot.model || DEFAULT_OPENAI_CHAT_MODEL,
+			temperature: bot.temperature ?? DEFAULT_TEMPERATURE,
+			messages: [...logPrompts, { 'role': 'user', 'content': question }]
+		});
+		return {
+			message: response.data.choices?.[0].message?.content,
+			inputToken: response.data.usage?.prompt_tokens,
+			outputToken: response.data.usage?.completion_tokens,
+		}
+	} else {
+		const nosystemLogs = convertAnthropicLogPrompt(logPrompts)
+		const response = await model.messages.create({
+			model: bot.model || DEFAULT_CLAUDE3_CHAT_MODEL,
+			temperature: bot.temperature ?? DEFAULT_TEMPERATURE,
+			messages: [...nosystemLogs, { 'role': 'user', 'content': question }],
+			max_tokens: bot.maxPromptToken ?? DEFAULT_MAX_PROMPT_TOKEN,
+		})
+		return {
+			message: response.content.map(content => content.text).join('\n'),
+			inputToken: response.usage.input_tokens,
+			outputToken: response.usage.output_tokens,
+		}
+	}
+
 };
 
 export const summarizeDiscordLogs = async (openai: OpenAIApi, logs: string[], language?: LocaleString): Promise<string> => {
@@ -25,7 +47,7 @@ export const summarizeDiscordLogs = async (openai: OpenAIApi, logs: string[], la
 		content = content.concat(logs[i], '\n');
 	}
 	const response = await openai.createChatCompletion({
-		model: process.env.OPENAI_MODEL || DEFAULT_OPENAI_CHAT_MODEL,
+		model: DEFAULT_OPENAI_CHAT_MODEL,
 		temperature: DEFAULT_TEMPERATURE,
 		messages: [{ role: 'system', content: SUMMARIZE_SYSTEM_MESSAGE[language || 'en-US'] || '' }, { role: 'user', content: content }]
 	});
@@ -48,6 +70,11 @@ export const createLogPrompt = (messages: ChatMessageWithToken[], tokenLimit: nu
 	if (systemMessage) result.push(systemMessage.content);
 	return result.reverse();
 };
+
+export const convertAnthropicLogPrompt = (logPrompt: ChatCompletionRequestMessage[]): MessageParam[] => {
+	return logPrompt.map(log => log.role === 'system' ? { ...log, role: 'user' } : log) as MessageParam[];
+};
+
 
 export const getTokenLength = (message: string): number => {
 	return tokenizer.encode(message).length;
