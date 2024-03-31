@@ -52,7 +52,7 @@ export const summarizeDiscordLogs = async (openai: OpenAIApi, logs: string[], la
 		messages: [{ role: 'system', content: SUMMARIZE_SYSTEM_MESSAGE[language || 'en-US'] || '' }, { role: 'user', content: content }]
 	});
 	if (!response?.data?.choices[0]?.message) return Promise.reject();
-	return response.data.choices[0].message.content;
+	return response.data.choices[0].message.content || '';
 };
 
 export const createLogPrompt = (messages: ChatMessageWithToken[], tokenLimit: number, systemMessage?: ChatMessageWithToken): ChatCompletionRequestMessage[] => {
