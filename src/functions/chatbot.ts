@@ -23,5 +23,8 @@ export const readBotConfigs = (rootDir: string): ChatBotConfig[] => {
 	} catch (error) {
 		return [DefaultChatbotConfig];
 	}
-
 };
+
+export const readImageAsBase64 = (filePath: string): string => {
+	return fs.readFileSync(filePath, {encoding: 'base64'});
+}

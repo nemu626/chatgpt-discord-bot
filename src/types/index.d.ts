@@ -5,25 +5,37 @@ export type ChatBotConfig = {
     platform: AiPlatform;
     model: string;
     name: string;
-    maxPromptToken?: number;
+    maxOutputTokenSize?: number;
     temperature?: number;
     greetingMessage?: string;
     systemMessage?: string;
+    threadTimeLimitMinutes?: number;
+    profileImage: string;
+}
+
+export type Message = {
+    content: string;
+    role: 'user' | 'assistant';
 }
 
 export type ChatMessageWithToken = {
-    content: ChatCompletionRequestMessage;
+    content: Message;
     token: number;
+    timestamp: Date;
+}
+export type ChatQA = {
+    question: ChatMessageWithToken;
+    answers: ChatMessageWithToken[];
 }
 
 export type AnthropicChatMessageWithToken = {
     content: MessageParam;
     token: number;
+    timestamp: Date;
 }
 
 export type ChatBot = ChatBotConfig & {
-    logs: ChatMessageWithToken[];
-    systemPrompt?: ChatMessageWithToken;
+    logs: ChatQA[];
 }
 
 export type AiPlatform = 'openai' | 'anthropic';
