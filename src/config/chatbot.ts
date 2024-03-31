@@ -5,7 +5,7 @@ export const DEFAULT_TEMPERATURE = 0.5;
 export const DEFAULT_MAX_PROMPT_TOKEN = TOKEN_MAX_COUNT / 2;
 export const DEFAULT_SYSTEM_MESSAGE = 'You are chatbot assistant.';
 export const DEFAULT_GREETING_MESSAGE = 'I am a chatbot using chatGPT. Mention me and I will answer you.';
-export const DEFAULT_CONTEXT_TIME_THRETHOLD_MS = 1000 * 60 * 30; // 30 minutes.
+export const DEFAULT_CONTEXT_TIME_THRETHOLD_MINUTES = 30; // 30 minutes.
 
 
 export const ERROR_MESSAGE_500 = ' Sorry, chatGPT API is temporarily not working. Please try again in a few minutes.';

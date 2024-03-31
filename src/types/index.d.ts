@@ -9,6 +9,7 @@ export type ChatBotConfig = {
     temperature?: number;
     greetingMessage?: string;
     systemMessage?: string;
+    threadTimeLimitMinutes?: number;
 }
 
 export type Message = {

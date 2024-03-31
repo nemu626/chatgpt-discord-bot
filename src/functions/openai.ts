@@ -2,15 +2,16 @@ import Anthropic from '@anthropic-ai/sdk';
 import { get_encoding } from '@dqbd/tiktoken';
 import { LocaleString } from 'discord.js';
 import { OpenAIApi } from 'openai';
-import { DEFAULT_CONTEXT_TIME_THRETHOLD_MS, DEFAULT_MAX_PROMPT_TOKEN, DEFAULT_TEMPERATURE } from '../config/chatbot';
+import { DEFAULT_CONTEXT_TIME_THRETHOLD_MINUTES, DEFAULT_MAX_PROMPT_TOKEN, DEFAULT_TEMPERATURE } from '../config/chatbot';
 import { DEFAULT_CLAUDE3_CHAT_MODEL, DEFAULT_OPENAI_CHAT_MODEL, SUMMARIZE_INPUT_TOKEN_MAX, SUMMARIZE_SYSTEM_MESSAGE } from '../config/openai';
 import { ChatBot, ChatQA, ChatResponseData, Message } from '../types';
 
 const tokenizer = get_encoding('cl100k_base');
 
 export const chatCompletion = async (model: OpenAIApi | Anthropic, question: string, bot: ChatBot): Promise<ChatResponseData> => {
+	const contextTimeLimitMs = (bot.threadTimeLimitMinutes || DEFAULT_CONTEXT_TIME_THRETHOLD_MINUTES) * 1000 * 60;
+	const logPrompts = cutOffLogsByTime(bot.logs, contextTimeLimitMs)
 	if (model instanceof OpenAIApi && bot.platform === 'openai') {
-		const logPrompts = cutOffLogsByTime(bot.logs, DEFAULT_CONTEXT_TIME_THRETHOLD_MS)
 		const response = await model.createChatCompletion({
 			model: bot.model || DEFAULT_OPENAI_CHAT_MODEL,
 			temperature: bot.temperature ?? DEFAULT_TEMPERATURE,
@@ -25,7 +26,6 @@ export const chatCompletion = async (model: OpenAIApi | Anthropic, question: str
 			outputToken: response.data.usage?.completion_tokens,
 		}
 	} else if (model instanceof Anthropic && bot.platform === 'anthropic'){
-		const logPrompts = cutOffLogsByTime(bot.logs, DEFAULT_CONTEXT_TIME_THRETHOLD_MS)
 		const response = await model.messages.create({
 			system: bot.systemMessage,
 			model: bot.model || DEFAULT_CLAUDE3_CHAT_MODEL,
