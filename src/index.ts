@@ -110,8 +110,10 @@ client.on('messageCreate', (msg: Message) => {
 			console.log(chatbotLog('Answer', bot.name, message));
 			//Push to log 
 			if (inputToken && outputToken) {
-				bot.logs.push({ content: { role: 'user', content: question }, token: inputToken, timestamp: new Date()});
-				bot.logs.push({ content: { role: 'assistant', content: message }, token: outputToken, timestamp: new Date() });
+				bot.logs.push({
+					question: { content: { role: 'user', content: question }, token: inputToken, timestamp: new Date()},
+					answers: [{ content: { role: 'assistant', content: message }, token: outputToken, timestamp: new Date() }]
+				})
 			}
 		}).catch((error: Error) => {
 			console.log(errorLog(error.message));

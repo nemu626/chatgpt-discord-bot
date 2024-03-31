@@ -11,10 +11,19 @@ export type ChatBotConfig = {
     systemMessage?: string;
 }
 
+export type Message = {
+    content: string;
+    role: 'user' | 'assistant';
+}
+
 export type ChatMessageWithToken = {
-    content: ChatCompletionRequestMessage;
+    content: Message;
     token: number;
     timestamp: Date;
+}
+export type ChatQA = {
+    question: ChatMessageWithToken;
+    answers: ChatMessageWithToken[];
 }
 
 export type AnthropicChatMessageWithToken = {
@@ -24,8 +33,7 @@ export type AnthropicChatMessageWithToken = {
 }
 
 export type ChatBot = ChatBotConfig & {
-    logs: ChatMessageWithToken[];
-    systemPrompt?: ChatMessageWithToken;
+    logs: ChatQA[];
 }
 
 export type AiPlatform = 'openai' | 'anthropic';

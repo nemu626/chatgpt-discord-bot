@@ -1,21 +1,23 @@
-import { DEFAULT_TEMPERATURE, DEFAULT_MAX_PROMPT_TOKEN } from '../config/chatbot';
-import { AnthropicChatMessageWithToken, ChatBot, ChatMessageWithToken, ChatResponseData } from '../types';
-import { CreateChatCompletionResponse, OpenAIApi, CreateChatCompletionRequest, ChatCompletionRequestMessage } from 'openai';
-import { DEFAULT_CLAUDE3_CHAT_MODEL, DEFAULT_OPENAI_CHAT_MODEL, SUMMARIZE_INPUT_TOKEN_MAX, SUMMARIZE_SYSTEM_MESSAGE } from '../config/openai';
+import Anthropic from '@anthropic-ai/sdk';
 import { get_encoding } from '@dqbd/tiktoken';
 import { LocaleString } from 'discord.js';
-import Anthropic from '@anthropic-ai/sdk';
-import { MessageParam } from '@anthropic-ai/sdk/resources';
+import { OpenAIApi } from 'openai';
+import { DEFAULT_CONTEXT_TIME_THRETHOLD_MS, DEFAULT_MAX_PROMPT_TOKEN, DEFAULT_TEMPERATURE } from '../config/chatbot';
+import { DEFAULT_CLAUDE3_CHAT_MODEL, DEFAULT_OPENAI_CHAT_MODEL, SUMMARIZE_INPUT_TOKEN_MAX, SUMMARIZE_SYSTEM_MESSAGE } from '../config/openai';
+import { ChatBot, ChatQA, ChatResponseData, Message } from '../types';
 
 const tokenizer = get_encoding('cl100k_base');
 
 export const chatCompletion = async (model: OpenAIApi | Anthropic, question: string, bot: ChatBot): Promise<ChatResponseData> => {
 	if (model instanceof OpenAIApi && bot.platform === 'openai') {
-		const logPrompts = createLogPrompt(bot.logs, bot.maxOutputTokenSize || DEFAULT_MAX_PROMPT_TOKEN, bot.systemPrompt);
+		const logPrompts = cutOffLogsByTime(bot.logs, DEFAULT_CONTEXT_TIME_THRETHOLD_MS)
 		const response = await model.createChatCompletion({
 			model: bot.model || DEFAULT_OPENAI_CHAT_MODEL,
 			temperature: bot.temperature ?? DEFAULT_TEMPERATURE,
-			messages: [...logPrompts, { 'role': 'user', 'content': question }]
+			messages: [
+				{ 'role': 'system', 'content': bot.systemMessage}, 
+				...logPrompts, 
+				{ 'role': 'user', 'content': question }]
 		});
 		return {
 			message: response.data.choices?.[0].message?.content,
@@ -23,7 +25,7 @@ export const chatCompletion = async (model: OpenAIApi | Anthropic, question: str
 			outputToken: response.data.usage?.completion_tokens,
 		}
 	} else if (model instanceof Anthropic && bot.platform === 'anthropic'){
-		const logPrompts = createLogPrompt(bot.logs, bot.maxOutputTokenSize || DEFAULT_MAX_PROMPT_TOKEN) as MessageParam[];
+		const logPrompts = cutOffLogsByTime(bot.logs, DEFAULT_CONTEXT_TIME_THRETHOLD_MS)
 		const response = await model.messages.create({
 			system: bot.systemMessage,
 			model: bot.model || DEFAULT_CLAUDE3_CHAT_MODEL,
@@ -57,20 +59,14 @@ export const summarizeDiscordLogs = async (openai: OpenAIApi, logs: string[], la
 	return response.data.choices[0].message.content || '';
 };
 
-export const createLogPrompt = (messages: ChatMessageWithToken[], tokenLimit: number, systemMessage?: ChatMessageWithToken): ChatCompletionRequestMessage[] => {
-	if (systemMessage?.token && systemMessage.token > tokenLimit) return [];
+// `timeThrethold`ms以前のログをコンテキストに含めない
+export const cutOffLogsByTime = (qas: ChatQA[], timeThrethold: number): Message[] => {
+	const now: number = new Date().getTime();
 
-	const limit = tokenLimit - (systemMessage?.token ?? 0);
-	let sum = 0;
-	const result: ChatCompletionRequestMessage[] = [];
-	for (let i = messages.length - 1; i > 0; i--) {
-		if (sum + messages[i].token > limit)
-			break;
-		result.push(messages[i].content);
-		sum += messages[i].token;
-	}
-	if (systemMessage) result.push(systemMessage.content);
-	return result.reverse();
+	return qas
+		.filter((qa) => (now - qa.question.timestamp.getTime()) < timeThrethold)
+		.flatMap(qa => [qa.question, ...qa.answers])
+		.map(chatWithToken => (chatWithToken.content))
 };
 
 export const getTokenLength = (message: string): number => {

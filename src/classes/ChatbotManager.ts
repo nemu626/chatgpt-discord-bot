@@ -18,11 +18,6 @@ export class ChatbotManager {
 		this.bots = configs.map(config => ({
 			...config,
 			logs: [],
-			systemPrompt: config.systemMessage ? {
-				content: { content: config.systemMessage, role: 'system' },
-				token: getTokenLength(config.systemMessage),
-				timestamp: new Date(),
-			} : undefined
 		}));
 	}
 	get botNames(): string[] {
