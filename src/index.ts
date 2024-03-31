@@ -9,17 +9,24 @@ import { SummarizeCommand, getChangeChatbotCommand } from './functions/commands'
 import { PromptColor, appLog, chatbotLog, coloredLog, errorLog } from './functions/logging';
 import { chatCompletion, summarizeDiscordLogs } from './functions/openai';
 import { DEFAULT_OPENAI_CHAT_MODEL } from './config/openai';
+import { Anthropic } from '@anthropic-ai/sdk';
 
 
 const client = new Client({ intents: DefaultClientIntents });
 const token: string = process.env.DISCORD_BOT_TOKEN || '';
 const apiKey: string = process.env.OPENAI_APIKEY || '';
 const openAIApi = new OpenAIApi(new Configuration({ apiKey: apiKey }));
+const anthropic = new Anthropic({
+	apiKey: process.env.ANTHROPIC_API_KEY || ''
+});
 
-console.log(`OpenAI Model: ${coloredLog(process.env.OPENAI_MODEL || DEFAULT_OPENAI_CHAT_MODEL, PromptColor.Cyan, true)}`);
 
 const chatbotManager = ChatbotManager.fromFiles('./bots');
-console.log(appLog(`chatbot load from files:  ${coloredLog(chatbotManager.botNames.join(', '), PromptColor.Cyan, true)}`));
+console.log(appLog(`-- Chatbot load from files --`));
+chatbotManager.botNames.forEach((name) => {
+	const bot = chatbotManager.getByName(name);
+	console.log(appLog(`${coloredLog(name, PromptColor.Cyan, true)} : ${bot?.platform} - ${bot?.model}`))
+})
 
 const slashCommands = [getChangeChatbotCommand(chatbotManager.botNames), SummarizeCommand];
 
@@ -95,16 +102,17 @@ client.on('messageCreate', (msg: Message) => {
 	msg.channel.sendTyping();
 	const bot = chatbotManager.current(msg.guild?.id || '');
 
+
 	chatCompletion(openAIApi, question, bot || DefaultChatbot)
-		.then(data => {
-			if (!data) return;
-			const answer: string = data.choices?.[0].message?.content || '';
-			msg.reply(answer);
-			console.log(chatbotLog('Answer', bot.name, answer));
+		.then(({ message, inputToken, outputToken }) => {
+			if (!message) return;
+			msg.reply(message);
+			console.log(chatbotLog('Answer', bot.name, message));
 			//Push to log 
-			if (!data.usage?.prompt_tokens || !data.usage?.completion_tokens) return;
-			bot.logs.push({ content: { role: 'user', content: question }, token: data.usage?.prompt_tokens });
-			bot.logs.push({ content: { role: 'assistant', content: answer }, token: data.usage?.completion_tokens });
+			if (inputToken && outputToken) {
+				bot.logs.push({ content: { role: 'user', content: question }, token: inputToken });
+				bot.logs.push({ content: { role: 'assistant', content: message }, token: outputToken });
+			}
 		}).catch((error: Error) => {
 			console.log(errorLog(error.message));
 			msg.reply(ERROR_MESSAGE_500);
