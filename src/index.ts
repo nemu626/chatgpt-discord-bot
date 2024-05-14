@@ -109,7 +109,6 @@ client.on('messageCreate', (msg: Message) => {
 			.map(attach => attach.url)
 		: []
 
-	console.log('attached', attachedImageUrls, msg.attachments)
 	msg.channel.sendTyping();
 	const bot = chatbotManager.current(msg.guild?.id || '');
 	const questionWithAuthor = `${msg.member?.displayName} : '${question}'`
