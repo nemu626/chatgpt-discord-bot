@@ -103,17 +103,13 @@ client.on('messageCreate', (msg: Message) => {
 	const question = msg.cleanContent;
 	console.log(chatbotLog('Question', msg.author?.username || '', question));
 
-	let attachImages = []
-	// Read image attachments
-	if (msg.attachments.size > 0) {
-
-	}
 	const attachedImageUrls: string[] = (msg.attachments.size > 0) ?
 		msg.attachments
 			.filter(attach => !!attach.height && attach.width && attach.url)
 			.map(attach => attach.url)
 		: []
 
+	console.log('attached', attachedImageUrls, msg.attachments)
 	msg.channel.sendTyping();
 	const bot = chatbotManager.current(msg.guild?.id || '');
 	const questionWithAuthor = `${msg.member?.displayName} : '${question}'`
