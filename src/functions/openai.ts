@@ -1,7 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { get_encoding } from '@dqbd/tiktoken';
 import { LocaleString } from 'discord.js';
-import { OpenAI as OpenAIApi } from 'openai';
+import { OpenAI as OpenAIApi, toFile } from 'openai';
 import { DEFAULT_CONTEXT_TIME_THRETHOLD_MINUTES, DEFAULT_MAX_PROMPT_TOKEN, DEFAULT_TEMPERATURE } from '../config/chatbot';
 import { DEFAULT_CLAUDE3_CHAT_MODEL, DEFAULT_OPENAI_CHAT_MODEL, SUMMARIZE_INPUT_TOKEN_MAX, SUMMARIZE_SYSTEM_MESSAGE } from '../config/openai';
 import { ChatBot, ChatQA, ChatResponseData, Message } from '../types';
@@ -80,3 +80,11 @@ export const cutOffLogsByTime = (qas: ChatQA[], timeThrethold: number): Message[
 export const getTokenLength = (message: string): number => {
 	return tokenizer.encode(message).length;
 };
+
+export const whisper = async (model: OpenAIApi, audioBuffer: ArrayBuffer ): Promise<string> => {
+	const transcription = await model.audio.transcriptions.create({
+		model: 'whisper-1',
+		file: await toFile(audioBuffer, 'file.wav', {type: 'audio/wav'})
+	})
+	return transcription.text;
+} 
