@@ -1,16 +1,17 @@
-import { Client, Collection, Guild, Message, StageChannel } from 'discord.js';
+import { Client, Collection, Guild, GuildMember, Message, StageChannel } from 'discord.js';
 import 'dotenv/config';
 import { OpenAI } from 'openai';
 import { ChatbotManager } from './classes/ChatbotManager';
 import { DefaultChatbot, ERROR_MESSAGE_500, IMAGE_PATH } from './config/chatbot';
 import { DefaultClientIntents } from './config/client';
 import { CommandNames, DEFAULT_SUMMARIZE_HOUR } from './config/commands';
-import { SummarizeCommand, getChangeChatbotCommand } from './functions/commands';
+import { SummarizeCommand, VoiceLogCommand, getChangeChatbotCommand } from './functions/commands';
 import { PromptColor, appLog, chatbotLog, coloredLog, errorLog } from './functions/logging';
-import { chatCompletion, summarizeDiscordLogs } from './functions/openai';
-import { DEFAULT_OPENAI_CHAT_MODEL } from './config/openai';
+import { chatCompletion, summarizeDiscordLogs, whisper } from './functions/openai';
 import { Anthropic } from '@anthropic-ai/sdk';
-import { readImageAsBase64 } from './functions/chatbot';
+import { EndBehaviorType, getVoiceConnection, joinVoiceChannel } from '@discordjs/voice';
+import { OpusEncoder } from '@discordjs/opus';
+const wavConverter = require('wav-converter')
 
 
 const client = new Client({ intents: DefaultClientIntents });
@@ -21,6 +22,7 @@ const anthropic = new Anthropic({
 	apiKey: process.env.ANTHROPIC_API_KEY || ''
 });
 
+const opusEncoder = new OpusEncoder(48000, 2);
 
 const chatbotManager = ChatbotManager.fromFiles('./bots');
 console.log(appLog(`-- Chatbot load from files --`));
@@ -29,11 +31,12 @@ chatbotManager.botNames.forEach((name) => {
 	console.log(appLog(`${coloredLog(name, PromptColor.Cyan, true)} : ${bot?.platform} - ${bot?.model}`))
 })
 
-const slashCommands = [getChangeChatbotCommand(chatbotManager.botNames), SummarizeCommand];
+const slashCommands = [getChangeChatbotCommand(chatbotManager.botNames), SummarizeCommand, VoiceLogCommand];
 
 client.on('ready', async (client) => {
 	console.log(appLog(`Logged in as username: ${coloredLog(client.user?.tag, PromptColor.Cyan, true)}!`));
 	client.application.commands.set(slashCommands);
+	console.log(appLog(`Slash Commands setted: ${coloredLog(slashCommands.map(command => command.name).join(','), PromptColor.Cyan, true)}`));
 
 	const guilds = client.guilds.cache;
 	guilds.forEach(guild => {
@@ -84,7 +87,56 @@ client.on('interactionCreate', async (interaction) => {
 		}
 		interaction.followUp(`*** ### Here is Summarization of last ${hours} hours. ### *** \n ${summarized}`);
 	}
+	if (slashCommand.name === CommandNames.voiceLog) {
+		if (!(interaction.member instanceof GuildMember) || !interaction.member.voice.channel)
+			return;
+		const bot = chatbotManager.current(interaction.guild?.id || '');
+		if (bot.platform !== 'openai') {
+			console.log('Sorry, STT is enable only openai Bots.')
+			return;
+		}
+
+		const voiceChannel = interaction.member.voice.channel;
+		const connection = joinVoiceChannel({
+			channelId: voiceChannel.id,
+			guildId: voiceChannel.guild.id,
+			adapterCreator: voiceChannel.guild.voiceAdapterCreator
+		});
+		await interaction.reply({ content: 'Joining your voice channel.'})
+
+		const receiver = connection.receiver;
+		let streamChunks: Buffer[] = []
+		receiver.speaking.on('start', userId => {
+			const opusStream = receiver.subscribe(userId, { end: { behavior: EndBehaviorType.AfterSilence, duration: 100}});
+			opusStream.on('data', chunk => {
+				const decoded = opusEncoder.decode(chunk);
+				streamChunks.push(decoded);
+			})
+		})
+		receiver.speaking.on('end', (userId) => {
+			let wavData = wavConverter.encodeWav(Buffer.concat(streamChunks), {
+				numChannels: 2,
+				sampleRate: 48000,
+				byteRate: 16,
+			})
+			const speaker = voiceChannel.members.find(member => member.id === userId)
+			whisper(openAIApi, wavData).then(sttText => {
+				voiceChannel.send(`${speaker?.displayName}: ${sttText}`)
+			})
+			streamChunks = [];
+		})
+	}
 });
+
+client.on('voiceStateUpdate', (oldState, newState) => {
+	const channel = newState.channel || oldState.channel;
+	if (channel  && channel?.members.size === 1 && channel?.members.find(member => member.id === client?.user?.id)) {
+        const connection = getVoiceConnection(channel.guild.id);
+        if (connection) {
+            connection.destroy();
+        }
+	}
+})
 
 client.on('guildCreate', (guild: Guild) => {
 	const bot = chatbotManager.current(guild.id);

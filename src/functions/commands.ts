@@ -32,3 +32,9 @@ export const SummarizeCommand: ChatInputApplicationCommandData = {
 		required: false,
 	}]
 };
+
+export const VoiceLogCommand: ChatInputApplicationCommandData = {
+	description: 'STT for your voice channel.',
+	name: CommandNames.voiceLog,
+	options: []
+}

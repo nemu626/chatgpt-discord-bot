@@ -3,6 +3,8 @@ FROM node:19-slim AS BUILDER
 
 WORKDIR /app
 
+RUN apt update && apt install -y build-essential libtool
+
 COPY package.json package-lock.json ./
 RUN npm install
 
