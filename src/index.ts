@@ -1,6 +1,6 @@
 import { Client, Collection, Guild, Message, StageChannel } from 'discord.js';
 import 'dotenv/config';
-import { Configuration, OpenAIApi } from 'openai';
+import { OpenAI } from 'openai';
 import { ChatbotManager } from './classes/ChatbotManager';
 import { DefaultChatbot, ERROR_MESSAGE_500, IMAGE_PATH } from './config/chatbot';
 import { DefaultClientIntents } from './config/client';
@@ -16,7 +16,7 @@ import { readImageAsBase64 } from './functions/chatbot';
 const client = new Client({ intents: DefaultClientIntents });
 const token: string = process.env.DISCORD_BOT_TOKEN || '';
 const apiKey: string = process.env.OPENAI_APIKEY || '';
-const openAIApi = new OpenAIApi(new Configuration({ apiKey: apiKey }));
+const openAIApi = new OpenAI({ apiKey: apiKey });
 const anthropic = new Anthropic({
 	apiKey: process.env.ANTHROPIC_API_KEY || ''
 });
@@ -103,12 +103,23 @@ client.on('messageCreate', (msg: Message) => {
 	const question = msg.cleanContent;
 	console.log(chatbotLog('Question', msg.author?.username || '', question));
 
+	let attachImages = []
+	// Read image attachments
+	if (msg.attachments.size > 0) {
+
+	}
+	const attachedImageUrls: string[] = (msg.attachments.size > 0) ?
+		msg.attachments
+			.filter(attach => !!attach.height && attach.width && attach.url)
+			.map(attach => attach.url)
+		: []
+
 	msg.channel.sendTyping();
 	const bot = chatbotManager.current(msg.guild?.id || '');
 	const questionWithAuthor = `${msg.member?.displayName} : '${question}'`
 
 	const model = bot.platform === 'openai' ? openAIApi : anthropic;
-	chatCompletion(model, questionWithAuthor, bot || DefaultChatbot)
+	chatCompletion(model, questionWithAuthor, bot || DefaultChatbot, attachedImageUrls)
 		.then(({ message, inputToken, outputToken }) => {
 			if (!message) return;
 			msg.reply(message);
@@ -116,7 +127,7 @@ client.on('messageCreate', (msg: Message) => {
 			//Push to log 
 			if (inputToken && outputToken) {
 				bot.logs.push({
-					question: { content: { role: 'user', content: question }, token: inputToken, timestamp: new Date()},
+					question: { content: { role: 'user', content: question }, token: inputToken, timestamp: new Date() },
 					answers: [{ content: { role: 'assistant', content: message }, token: outputToken, timestamp: new Date() }]
 				})
 			}
