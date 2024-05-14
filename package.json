@@ -33,7 +33,10 @@
     "discord.js": "^14.15.2",
     "dotenv": "^16.0.3",
     "ffmpeg-static": "^5.2.0",
-    "openai": "^4.46.1"
+    "libsodium-wrappers": "^0.7.13",
+    "openai": "^4.46.1",
+    "tweetnacl": "^1.0.3",
+    "wav-converter": "^1.0.0"
   },
   "devDependencies": {
     "@types/node": "^18.14.6",
