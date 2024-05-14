@@ -25,11 +25,11 @@
   },
   "homepage": "https://github.com/nemu626/chatgpt-discord-bot#readme",
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.19.1",
+    "@anthropic-ai/sdk": "^0.20.9",
     "@dqbd/tiktoken": "^0.4.0",
     "discord.js": "^14.7.1",
     "dotenv": "^16.0.3",
-    "openai": "^3.2.0"
+    "openai": "^4.46.1"
   },
   "devDependencies": {
     "@types/node": "^18.14.6",
