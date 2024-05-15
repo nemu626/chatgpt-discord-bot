@@ -107,7 +107,7 @@ client.on('interactionCreate', async (interaction) => {
 		const receiver = connection.receiver;
 		let streamChunks: Buffer[] = []
 		receiver.speaking.on('start', userId => {
-			const opusStream = receiver.subscribe(userId, { end: { behavior: EndBehaviorType.AfterSilence, duration: 100}});
+			const opusStream = receiver.subscribe(userId, { end: { behavior: EndBehaviorType.Manual}});
 			opusStream.on('data', chunk => {
 				const decoded = opusEncoder.decode(chunk);
 				streamChunks.push(decoded);
