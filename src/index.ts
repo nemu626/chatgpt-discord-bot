@@ -11,6 +11,7 @@ import { chatCompletion, summarizeDiscordLogs, whisper } from './functions/opena
 import { Anthropic } from '@anthropic-ai/sdk';
 import { EndBehaviorType, getVoiceConnection, joinVoiceChannel } from '@discordjs/voice';
 import { OpusEncoder } from '@discordjs/opus';
+import { addToMap } from './functions/map';
 const wavConverter = require('wav-converter')
 
 
@@ -102,19 +103,22 @@ client.on('interactionCreate', async (interaction) => {
 			guildId: voiceChannel.guild.id,
 			adapterCreator: voiceChannel.guild.voiceAdapterCreator
 		});
+		connection.on('error', (error) => {
+			console.error('Voice Connection has error.' , error.message);
+		})
 		await interaction.reply({ content: 'Joining your voice channel.'})
 
 		const receiver = connection.receiver;
-		let streamChunks: Buffer[] = []
+		const streamChunksMap: Map<string, Buffer[]> = new Map();
 		receiver.speaking.on('start', userId => {
 			const opusStream = receiver.subscribe(userId, { end: { behavior: EndBehaviorType.Manual}});
 			opusStream.on('data', chunk => {
 				const decoded = opusEncoder.decode(chunk);
-				streamChunks.push(decoded);
+				addToMap(streamChunksMap, userId, decoded);
 			})
 		})
 		receiver.speaking.on('end', (userId) => {
-			let wavData = wavConverter.encodeWav(Buffer.concat(streamChunks), {
+			let wavData = wavConverter.encodeWav(Buffer.concat(streamChunksMap.get(userId) || []), {
 				numChannels: 2,
 				sampleRate: 48000,
 				byteRate: 16,
@@ -123,7 +127,7 @@ client.on('interactionCreate', async (interaction) => {
 			whisper(openAIApi, wavData).then(sttText => {
 				voiceChannel.send(`${speaker?.displayName}: ${sttText}`)
 			})
-			streamChunks = [];
+			streamChunksMap.set(userId, []);
 		})
 	}
 });
