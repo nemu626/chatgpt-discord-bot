@@ -167,7 +167,7 @@ client.on('messageCreate', (msg: Message) => {
 
 	msg.channel.sendTyping();
 	const bot = chatbotManager.current(msg.guild?.id || '');
-	const questionWithAuthor = `${msg.member?.displayName} : '${question}'`
+	const questionWithAuthor = `${msg.member?.user.username} : '${question}'`
 
 	const model = bot.platform === 'openai' ? openAIApi : anthropic;
 	chatCompletion(model, questionWithAuthor, bot || DefaultChatbot, attachedImageUrls)
