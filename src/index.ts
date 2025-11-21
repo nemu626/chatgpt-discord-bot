@@ -9,6 +9,7 @@ import { SummarizeCommand, VoiceLogCommand, getChangeChatbotCommand } from './fu
 import { PromptColor, appLog, chatbotLog, coloredLog, errorLog } from './functions/logging';
 import { chatCompletion, summarizeDiscordLogs, whisper } from './functions/openai';
 import { Anthropic } from '@anthropic-ai/sdk';
+import { GoogleGenAI } from '@google/genai';
 import { EndBehaviorType, getVoiceConnection, joinVoiceChannel } from '@discordjs/voice';
 import { OpusEncoder } from '@discordjs/opus';
 import { addToMap } from './functions/map';
@@ -21,6 +22,9 @@ const apiKey: string = process.env.OPENAI_APIKEY || '';
 const openAIApi = new OpenAI({ apiKey: apiKey });
 const anthropic = new Anthropic({
 	apiKey: process.env.ANTHROPIC_API_KEY || ''
+});
+const googleClient = new GoogleGenAI({
+	apiKey: process.env.GOOGLE_API_KEY || ''
 });
 
 const opusEncoder = new OpusEncoder(48000, 2);
@@ -104,14 +108,14 @@ client.on('interactionCreate', async (interaction) => {
 			adapterCreator: voiceChannel.guild.voiceAdapterCreator
 		});
 		connection.on('error', (error) => {
-			console.error('Voice Connection has error.' , error.message);
+			console.error('Voice Connection has error.', error.message);
 		})
-		await interaction.reply({ content: 'Joining your voice channel.'})
+		await interaction.reply({ content: 'Joining your voice channel.' })
 
 		const receiver = connection.receiver;
 		const streamChunksMap: Map<string, Buffer[]> = new Map();
 		receiver.speaking.on('start', userId => {
-			const opusStream = receiver.subscribe(userId, { end: { behavior: EndBehaviorType.Manual}});
+			const opusStream = receiver.subscribe(userId, { end: { behavior: EndBehaviorType.Manual } });
 			opusStream.on('data', chunk => {
 				const decoded = opusEncoder.decode(chunk);
 				addToMap(streamChunksMap, userId, decoded);
@@ -134,11 +138,11 @@ client.on('interactionCreate', async (interaction) => {
 
 client.on('voiceStateUpdate', (oldState, newState) => {
 	const channel = newState.channel || oldState.channel;
-	if (channel  && channel?.members.size === 1 && channel?.members.find(member => member.id === client?.user?.id)) {
-        const connection = getVoiceConnection(channel.guild.id);
-        if (connection) {
-            connection.destroy();
-        }
+	if (channel && channel?.members.size === 1 && channel?.members.find(member => member.id === client?.user?.id)) {
+		const connection = getVoiceConnection(channel.guild.id);
+		if (connection) {
+			connection.destroy();
+		}
 	}
 })
 
@@ -169,7 +173,7 @@ client.on('messageCreate', (msg: Message) => {
 	const bot = chatbotManager.current(msg.guild?.id || '');
 	const questionWithAuthor = `${msg.member?.user.username} : '${question}'`
 
-	const model = bot.platform === 'openai' ? openAIApi : anthropic;
+	const model = bot.platform === 'openai' ? openAIApi : (bot.platform === 'anthropic' ? anthropic : googleClient);
 	chatCompletion(model, questionWithAuthor, bot || DefaultChatbot, attachedImageUrls)
 		.then(({ message, inputToken, outputToken }) => {
 			if (!message) return;

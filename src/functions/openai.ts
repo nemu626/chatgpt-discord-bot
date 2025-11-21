@@ -4,12 +4,14 @@ import { LocaleString } from 'discord.js';
 import { OpenAI as OpenAIApi, toFile } from 'openai';
 import { DEFAULT_CONTEXT_TIME_THRETHOLD_MINUTES, DEFAULT_MAX_PROMPT_TOKEN, DEFAULT_TEMPERATURE } from '../config/chatbot';
 import { DEFAULT_CLAUDE3_CHAT_MODEL, DEFAULT_OPENAI_CHAT_MODEL, SUMMARIZE_INPUT_TOKEN_MAX, SUMMARIZE_SYSTEM_MESSAGE } from '../config/openai';
+import { DEFAULT_GOOGLE_CHAT_MODEL } from '../config/google';
+import { GoogleGenAI } from '@google/genai';
 import { ChatBot, ChatQA, ChatResponseData, Message } from '../types';
 import { ChatCompletionContentPart } from 'openai/resources';
 
 const tokenizer = get_encoding('cl100k_base');
 
-export const chatCompletion = async (model: OpenAIApi | Anthropic, question: string, bot: ChatBot, attachedImageUrls: string[] = []): Promise<ChatResponseData> => {
+export const chatCompletion = async (model: OpenAIApi | Anthropic | GoogleGenAI, question: string, bot: ChatBot, attachedImageUrls: string[] = []): Promise<ChatResponseData> => {
 	const contextTimeLimitMs = (bot.threadTimeLimitMinutes || DEFAULT_CONTEXT_TIME_THRETHOLD_MINUTES) * 1000 * 60;
 	const logPrompts = cutOffLogsByTime(bot.logs, contextTimeLimitMs)
 	const content: string | ChatCompletionContentPart[] = attachedImageUrls.length ?
@@ -22,7 +24,7 @@ export const chatCompletion = async (model: OpenAIApi | Anthropic, question: str
 		const response = await model.chat.completions.create({
 			model: bot.model || DEFAULT_OPENAI_CHAT_MODEL,
 			temperature: bot.temperature ?? DEFAULT_TEMPERATURE,
-			max_completion_tokens: bot.maxOutputTokenSize ?? DEFAULT_MAX_PROMPT_TOKEN,
+			max_tokens: bot.maxOutputTokenSize ?? DEFAULT_MAX_PROMPT_TOKEN,
 			messages: [
 				{ 'role': 'system', 'content': bot.systemMessage || '' },
 				...logPrompts,
@@ -45,6 +47,32 @@ export const chatCompletion = async (model: OpenAIApi | Anthropic, question: str
 			message: response.content.map(content => content.text).join('\n'),
 			inputToken: response.usage.input_tokens,
 			outputToken: response.usage.output_tokens,
+		}
+	} else if (model instanceof GoogleGenAI && bot.platform === 'google') {
+		const history = logPrompts.map(log => ({
+			role: log.role === 'assistant' ? 'model' : 'user',
+			parts: [{ text: log.content as string }]
+		}));
+
+		const chat = model.chats.create({
+			model: bot.model || DEFAULT_GOOGLE_CHAT_MODEL,
+			history: history,
+			config: {
+				temperature: bot.temperature ?? DEFAULT_TEMPERATURE,
+				maxOutputTokens: bot.maxOutputTokenSize ?? DEFAULT_MAX_PROMPT_TOKEN,
+				systemInstruction: bot.systemMessage,
+			}
+		});
+
+		const result = await chat.sendMessage({ message: question });
+		// result might be the response object directly or have a response property.
+		// In the new SDK, result is usually the response.
+		// And it usually has a text() method.
+
+		return {
+			message: result.text,
+			inputToken: result.usageMetadata?.promptTokenCount,
+			outputToken: result.usageMetadata?.candidatesTokenCount
 		}
 	}
 	return {};
@@ -81,10 +109,10 @@ export const getTokenLength = (message: string): number => {
 	return tokenizer.encode(message).length;
 };
 
-export const whisper = async (model: OpenAIApi, audioBuffer: ArrayBuffer ): Promise<string> => {
+export const whisper = async (model: OpenAIApi, audioBuffer: ArrayBuffer): Promise<string> => {
 	const transcription = await model.audio.transcriptions.create({
 		model: 'whisper-1',
-		file: await toFile(audioBuffer, 'file.wav', {type: 'audio/wav'})
+		file: await toFile(audioBuffer, 'file.wav', { type: 'audio/wav' })
 	})
 	return transcription.text;
 } 
