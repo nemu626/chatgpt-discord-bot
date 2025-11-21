@@ -38,7 +38,7 @@ export type ChatBot = ChatBotConfig & {
     logs: ChatQA[];
 }
 
-export type AiPlatform = 'openai' | 'anthropic';
+export type AiPlatform = 'openai' | 'anthropic' | 'google';
 
 export type ChatResponseData = {
     message?: string;
